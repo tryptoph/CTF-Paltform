@@ -1,0 +1,14 @@
+/* Super high visibility for solved challenges */
+.solved-challenge {
+    background-color: #37d63e !important;
+    opacity: 1 !important;
+    border: 3px solid #ffd700 !important;
+    box-shadow: 0 0 10px rgba(55, 214, 62, 0.7) !important;
+}
+
+/* Make checkmark extremely visible */
+.fas.fa-check.corner-button-check {
+    color: #ffd700 !important;
+    font-size: 18px !important;
+    text-shadow: 0 0 3px black !important;
+}

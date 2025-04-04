@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% block stylesheets %}
+	<link rel="stylesheet" href="{{ url_for('views.themes', path='css/challenge-board.css') }}">
+	<style>
+		/* Pre-inject styles immediately */
+		.solved-challenge {
+			background-color: #37d63e !important;
+			opacity: 0.9 !important;
+			border: 2px solid #ffd700 !important;
+			transition: all 0.2s ease-in-out !important;
+		}
+
+		.corner-button-check {
+			position: absolute !important;
+			top: 5px !important;
+			right: 5px !important;
+			color: #ffd700 !important;
+			font-size: 16px !important;
+			text-shadow: 1px 1px 2px rgba(0,0,0,0.7) !important;
+		}
+	</style>
+	<script>
+		// Pre-load solved challenges data as early as possible
+		window.solvedChallenges = [];
+		fetch('/api/v1/users/me/solves')
+			.then(response => response.json())
+			.then(response => {
+				if (response.success) {
+					window.solvedChallenges = response.data.map(solve => solve.challenge_id);
+				}
+			})
+			.catch(error => console.error("Error pre-loading solves:", error));
+	</script>
+{% endblock %}
+{% block content %}
+<div class="jumbotron">
+	<div class="container">
+		<h1>Challenges</h1>
+	</div>
+</div>
+<div class="modal fade" id="challenge-window" tabindex="-1" role="dialog">
+</div>
+<div class="container">
+	<div class="row">
+		<div class="col-md-12">
+			{% include "components/errors.html" %}
+		</div>
+	</div>
+	<div id='challenges-board'>
+		<div class="min-vh-50 d-flex align-items-center">
+			<div class="text-center w-100">
+				<i class="fas fa-circle-notch fa-spin fa-3x fa-fw spinner"></i>
+			</div>
+		</div>
+	</div>
+</div>
+{% endblock %}
+{% block scripts %}
+{% endblock %}
+{% block entrypoint %}
+	<script defer src="{{ url_for('views.themes', path='js/pages/challenges.js') }}"></script>
+	<script>
+	document.addEventListener('DOMContentLoaded', function() {
+		let observer;
+		let currentChallengeId = null;
+		
+		// Function to mark a single button as solved
+		function markButtonAsSolved(button) {
+			if (!button || button.classList.contains('solved-challenge')) return;
+			
+			button.classList.add('solved-challenge');
+			
+			// Check if the button already has the checkmark
+			if (!button.querySelector('.corner-button-check')) {
+				// Create the checkmark icon
+				const icon = document.createElement('i');
+				icon.className = 'fas fa-check corner-button-check';
+				
+				// Add it to the beginning of the button
+				button.insertBefore(icon, button.firstChild);
+			}
+		}
+		
+		// Function to mark all solved challenges based on cached data
+		function markSolvedChallenges() {
+			if (!window.solvedChallenges || !window.solvedChallenges.length) return;
+			
+			// Get all challenge buttons
+			const buttons = document.querySelectorAll('button.challenge-button');
+			if (!buttons.length) return;
+			
+			// Mark buttons that are in our solved list
+			for (const button of buttons) {
+				const challengeId = parseInt(button.value);
+				if (window.solvedChallenges.includes(challengeId)) {
+					markButtonAsSolved(button);
+				}
+			}
+		}
+		
+		// Function to refresh the solved challenges data
+		function refreshSolvedChallenges() {
+			fetch('/api/v1/users/me/solves')
+				.then(response => response.json())
+				.then(response => {
+					if (response.success) {
+						window.solvedChallenges = response.data.map(solve => solve.challenge_id);
+						markSolvedChallenges();
+					}
+				})
+				.catch(error => console.error("Error refreshing solves:", error));
+		}
+		
+		// Set up MutationObserver to detect when challenge buttons are added
+		observer = new MutationObserver(function(mutations) {
+			let shouldMark = false;
+			
+			for (const mutation of mutations) {
+				if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+					for (const node of mutation.addedNodes) {
+						if (node.nodeType === 1) { // Element node
+							// If challenge buttons were added or challenge board was updated
+							if (node.classList && (
+								node.classList.contains('challenge-button') || 
+								node.querySelector('.challenge-button')
+							)) {
+								shouldMark = true;
+								break;
+							}
+						}
+					}
+				}
+			}
+			
+			if (shouldMark) {
+				// Wait a tiny bit for all buttons to be rendered
+				setTimeout(markSolvedChallenges, 10);
+			}
+		});
+		
+		// Start observing the challenges board
+		observer.observe(document.body, {
+			childList: true,
+			subtree: true
+		});
+		
+		// Intercept AJAX responses to catch flag submissions in real-time
+		const originalOpen = XMLHttpRequest.prototype.open;
+		XMLHttpRequest.prototype.open = function() {
+			this.addEventListener('load', function() {
+				// Check if this is a challenge submission
+				if (this.responseURL && this.responseURL.includes('/api/v1/challenges/attempt')) {
+					try {
+						const response = JSON.parse(this.responseText);
+						if (response.success && response.data.status === "correct") {
+							// Immediately mark the current challenge as solved
+							if (currentChallengeId) {
+								// Add to our cache
+								if (!window.solvedChallenges.includes(currentChallengeId)) {
+									window.solvedChallenges.push(currentChallengeId);
+								}
+								
+								// Find and mark the button without waiting for modal close
+								const button = document.querySelector(`button.challenge-button[value="${currentChallengeId}"]`);
+								markButtonAsSolved(button);
+							}
+						}
+					} catch (e) {
+						console.error("Error processing XHR response:", e);
+					}
+				}
+			});
+			originalOpen.apply(this, arguments);
+		};
+		
+		// Track the currently open challenge
+		document.addEventListener('click', function(event) {
+			// When a challenge button is clicked
+			if (event.target && event.target.classList.contains('challenge-button') || 
+				(event.target.parentElement && event.target.parentElement.classList.contains('challenge-button'))) {
+				
+				const button = event.target.classList.contains('challenge-button') ? 
+					event.target : event.target.parentElement;
+				
+				currentChallengeId = parseInt(button.value);
+			}
+			
+			// When submit button is clicked
+			if (event.target && event.target.id === 'challenge-submit') {
+				// Update currentChallengeId from the hidden input
+				const challengeIdInput = document.getElementById('challenge-id');
+				if (challengeIdInput) {
+					currentChallengeId = parseInt(challengeIdInput.value);
+				}
+				
+				// Also set up backup method using DOM observation
+				const checkResult = setInterval(function() {
+					const resultNotification = document.getElementById('result-notification');
+					if (resultNotification && resultNotification.classList.contains('alert-success')) {
+						clearInterval(checkResult);
+						
+						// Add to our cache if not already added by XHR intercept
+						if (!window.solvedChallenges.includes(currentChallengeId)) {
+							window.solvedChallenges.push(currentChallengeId);
+							
+							// Find and mark the button without waiting for modal close
+							const button = document.querySelector(`button.challenge-button[value="${currentChallengeId}"]`);
+							markButtonAsSolved(button);
+						}
+					}
+				}, 100); // Check every 100ms
+				
+				// Clear check after 3 seconds
+				setTimeout(function() {
+					clearInterval(checkResult);
+				}, 3000);
+			}
+		});
+		
+		// Initial check after elements are likely loaded
+		setTimeout(markSolvedChallenges, 100);
+		
+		// Refresh data every 30 seconds
+		setInterval(refreshSolvedChallenges, 30000);
+	});
+	</script>
+{% endblock %}

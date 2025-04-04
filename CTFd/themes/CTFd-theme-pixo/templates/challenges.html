@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block stylesheets %}
+	<link rel="stylesheet" href="{{ url_for('views.themes', path='css/challenge-board.css') }}">
+{% endblock %}
+{% block content %}
+<div class="jumbotron">
+	<div class="container">
+		<h1>Challenges</h1>
+	</div>
+</div>
+<div class="modal fade" id="challenge-window" tabindex="-1" role="dialog">
+</div>
+<div class="container">
+	<div class="row">
+		<div class="col-md-12">
+			{% include "components/errors.html" %}
+		</div>
+	</div>
+	<div id='challenges-board'>
+		<div class="min-vh-50 d-flex align-items-center">
+			<div class="text-center w-100">
+				<i class="fas fa-circle-notch fa-spin fa-3x fa-fw spinner"></i>
+			</div>
+		</div>
+	</div>
+</div>
+{% endblock %}
+{% block scripts %}
+{% endblock %}
+{% block entrypoint %}
+	<script defer src="{{ url_for('views.themes', path='js/pages/challenges.js') }}"></script>
+	<script>
+	// Wait for the page to fully load
+	window.addEventListener('load', function() {
+		console.log("Applying solved challenges fix");
+		
+		// Custom styles for solved challenges
+		var style = document.createElement('style');
+		style.innerHTML = `
+			.solved-challenge {
+				background-color: #37d63e !important;
+				opacity: 0.9 !important;
+				border: 2px solid #ffd700 !important;
+			}
+			
+			.corner-button-check {
+				position: absolute !important;
+				top: 5px !important;
+				right: 5px !important;
+				color: #ffd700 !important;
+				font-size: 16px !important;
+				text-shadow: 1px 1px 2px rgba(0,0,0,0.7) !important;
+			}
+		`;
+		document.head.appendChild(style);
+		
+		// Replace the markSolves function
+		window.markSolves = function() {
+			// Make a direct API call to get user solves
+			return fetch('/api/v1/users/me/solves')
+				.then(response => response.json())
+				.then(function(response) {
+					if (response.success) {
+						const solves = response.data;
+						console.log("Found " + solves.length + " solved challenges");
+						
+						// Mark each solved challenge
+						for (let i = 0; i < solves.length; i++) {
+							const challengeId = solves[i].challenge_id;
+							const btn = $('button[value="' + challengeId + '"]');
+							
+							if (btn.length > 0) {
+								console.log("Marking challenge " + challengeId + " as solved");
+								
+								// Apply solved styling
+								btn.addClass("solved-challenge");
+								
+								// Remove existing check icon to prevent duplicates
+								btn.find('.fa-check.corner-button-check').remove();
+								
+								// Add check icon
+								btn.prepend("<i class='fas fa-check corner-button-check'></i>");
+							}
+						}
+					}
+				});
+		};
+		
+		// Call our new markSolves function after a short delay
+		setTimeout(markSolves, 1000);
+		
+		// Set an interval to periodically refresh the solved status
+		setInterval(markSolves, 10000);
+	});
+	</script>
+{% endblock %}
