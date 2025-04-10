@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+
+{% block stylesheets %}
+<link rel="stylesheet" href="{{ url_for('plugins.web_desktop.assets', path='css/webdesktop.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="jumbotron jumbotron-fluid bg-primary text-white">
+    <div class="container">
+        <h1><i class="fas fa-desktop mr-2"></i> Web Desktop</h1>
+        <p>Launch a desktop environment for security testing and CTF challenges.</p>
+    </div>
+</div>
+
+<div class="container">
+    <div id="alert-container"></div>
+
+    <!-- Container Information -->
+    <div id="container-status" class="desktop-container">
+        {% if container %}
+        <div id="container-info" class="row">
+            <div class="col-lg-4">
+                <div class="desktop-controls shadow-sm">
+                    <div class="desktop-header bg-primary text-white p-3 rounded">
+                        <img src="{{ url_for('plugins.web_desktop.assets', path='img/' + template_info.icon) if template_info else url_for('plugins.web_desktop.assets', path='img/desktop-icon.svg') }}"
+                             alt="{% if template_info %}{{ template_info.name }}{% else %}Desktop Environment{% endif %}" class="desktop-header-icon">
+                        <div>
+                            <h3>{% if template_info %}{{ template_info.name }}{% elif container.challenge %}{{ container.challenge.name }}{% else %}Desktop Environment{% endif %}</h3>
+                            <span id="status-badge" class="status-badge status-running">Running</span>
+                        </div>
+                    </div>
+
+                    <div class="desktop-info-card shadow-sm">
+                        <div class="desktop-info-item">
+                            <i class="fas fa-clock text-primary"></i>
+                            <div>
+                                <span class="info-label">Started</span>
+                                <span class="info-value">{{ container.start_time.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                            </div>
+                        </div>
+
+                        <div class="desktop-info-item">
+                            <i class="fas fa-hourglass-half text-warning"></i>
+                            <div>
+                                <span class="info-label">Time Remaining</span>
+                                <span class="info-value" id="time-remaining">
+                                    {% set timeout = config.get('web_desktop:docker_timeout', 3600)|int %}
+                                    {% set elapsed_seconds = (now - container.start_time).total_seconds()|int %}
+                                    {% set remaining_seconds = timeout - elapsed_seconds %}
+                                    {% if remaining_seconds > 0 %}
+                                        {{ (remaining_seconds / 60)|int }} minutes
+                                    {% else %}
+                                        Expiring soon
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="desktop-info-item">
+                            <i class="fas fa-sync text-info"></i>
+                            <div>
+                                <span class="info-label">Renewals</span>
+                                <span class="info-value">{{ container.renew_count }} / {{ config.get('web_desktop:docker_max_renew_count', 5) }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="desktop-actions">
+                        <a href="https://{{ config.get('web_desktop:domain', 'localhost') }}:{{ container.port }}"
+                           id="direct-launch-btn" class="btn btn-lg btn-primary btn-block direct-launch-btn mb-3"
+                           data-url="https://{{ config.get('web_desktop:domain', 'localhost') }}:{{ container.port }}"
+                           target="_blank">
+                            <i class="fas fa-external-link-alt mr-2"></i> Open in New Tab
+                        </a>
+
+                        <div class="action-buttons-row">
+                            <form method="POST" action="{{ url_for('web_desktop.renew_desktop') }}" class="action-form">
+                                <input type="hidden" name="nonce" value="{{ nonce }}">
+                                <button type="submit" class="btn btn-success"
+                                    {% if container.renew_count >= config.get('web_desktop:docker_max_renew_count', 5)|int %}disabled{% endif %}>
+                                    <i class="fas fa-clock mr-2"></i> Renew
+                                </button>
+                            </form>
+
+                            <form method="POST" action="{{ url_for('web_desktop.destroy_desktop') }}" class="action-form"
+                                  onsubmit="return confirm('Are you sure you want to destroy this desktop? All unsaved data will be lost.')">
+                                <input type="hidden" name="nonce" value="{{ nonce }}">
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="fas fa-trash-alt mr-2"></i> Destroy
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-8">
+                <div class="desktop-iframe-container shadow">
+                    <div class="embed-responsive embed-responsive-16by9">
+                        <iframe id="desktop-iframe" src="https://{{ config.get('web_desktop:domain', 'localhost') }}:{{ container.port }}" class="embed-responsive-item" allowfullscreen></iframe>
+                    </div>
+                </div>
+                <div class="alert alert-info mt-3 shadow-sm">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    If the embedded view doesn't work, use the "Open in New Tab" button to access your desktop directly.
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div id="template-selection">
+            <div class="template-header text-center mb-4">
+                <h2><i class="fas fa-th-large mr-2"></i> Select a Desktop Environment</h2>
+                <p class="lead">Choose from the available templates below to launch your desktop</p>
+            </div>
+
+            <div class="row template-grid">
+
+            {% for template in templates %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card template-card h-100 {% if template.recommended %}border-primary{% endif %}">
+                    <div class="card-header d-flex justify-content-between align-items-center {% if template.recommended %}bg-primary text-white{% endif %}">
+                        <div class="template-title">
+                            <img src="{{ url_for('plugins.web_desktop.assets', path='img/' + template.icon) }}"
+                                 alt="{{ template.name }}" width="24" height="24" class="mr-2"
+                                 onerror="this.onerror=null;this.src='{{ url_for('plugins.web_desktop.assets', path='img/desktop-icon.svg') }}';">
+                            {{ template.name }}
+                        </div>
+                        {% if template.recommended %}
+                        <span class="badge badge-light">Recommended</span>
+                        {% endif %}
+                    </div>
+                    <div class="card-body d-flex flex-column">
+                        <div class="text-center mb-3">
+                            <img src="{{ url_for('plugins.web_desktop.assets', path='img/' + template.icon) }}"
+                                 alt="{{ template.name }}" class="template-icon"
+                                 onerror="this.onerror=null;this.src='{{ url_for('plugins.web_desktop.assets', path='img/desktop-icon.svg') }}';">
+                        </div>
+                        {% if template.description %}
+                        <p class="template-description">{{ template.description }}</p>
+                        {% endif %}
+                        <div class="template-specs mt-auto">
+                            <div class="spec-item">
+                                <i class="fas fa-microchip text-muted"></i>
+                                <span><strong>CPU:</strong> {{ template.cpu_limit }}</span>
+                            </div>
+                            <div class="spec-item">
+                                <i class="fas fa-memory text-muted"></i>
+                                <span><strong>Memory:</strong> {{ template.memory_limit }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer text-center">
+                        <form method="POST" action="{{ url_for('web_desktop.launch_desktop', template_id=template.id) }}">
+                            <input type="hidden" name="nonce" value="{{ nonce }}">
+                            <button type="submit" class="btn btn-lg btn-primary btn-block launch-btn">
+                                <i class="fas fa-rocket mr-2"></i> Launch
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            {% if templates|length == 0 %}
+            <div class="col-12">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle mr-2"></i> No desktop templates are available.
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div id="loading-overlay" class="loading-overlay" style="display: none;">
+    <div class="spinner"></div>
+    <div id="loading-text">Loading...</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize direct launch button
+    const directLaunchBtn = document.getElementById('direct-launch-btn');
+    if (directLaunchBtn) {
+        directLaunchBtn.addEventListener('click', function(e) {
+            // Show loading overlay when opening in new tab
+            showLoading('Opening desktop in new tab...');
+            setTimeout(hideLoading, 1000); // Hide after 1 second
+        });
+    }
+
+    // Add loading overlay for form submissions
+    const forms = document.querySelectorAll('form');
+    forms.forEach(form => {
+        form.addEventListener('submit', function() {
+            const action = this.getAttribute('action');
+            if (action.includes('launch_desktop')) {
+                showLoading('Launching desktop environment...');
+            } else if (action.includes('renew_desktop')) {
+                showLoading('Renewing desktop time...');
+            } else if (action.includes('destroy_desktop')) {
+                showLoading('Destroying desktop...');
+            }
+        });
+    });
+
+    // Update time remaining counter
+    const timeRemainingElement = document.getElementById('time-remaining');
+    if (timeRemainingElement) {
+        let remainingMinutes = parseInt(timeRemainingElement.textContent);
+        if (!isNaN(remainingMinutes)) {
+            setInterval(function() {
+                if (remainingMinutes > 0) {
+                    remainingMinutes--;
+                    timeRemainingElement.textContent = remainingMinutes + ' minutes';
+                } else {
+                    timeRemainingElement.textContent = 'Expiring soon';
+                }
+            }, 60000); // Update every minute
+        }
+    }
+});
+
+// Helper functions
+function showLoading(message) {
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const loadingText = document.getElementById('loading-text');
+
+    if (loadingOverlay && loadingText) {
+        loadingText.textContent = message;
+        loadingOverlay.style.display = 'flex';
+    }
+}
+
+function hideLoading() {
+    const loadingOverlay = document.getElementById('loading-overlay');
+    if (loadingOverlay) {
+        loadingOverlay.style.display = 'none';
+    }
+}
+
+function showMessage(message, type) {
+    const alertContainer = document.getElementById('alert-container');
+    if (!alertContainer) return;
+
+    const alertHTML = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    `;
+
+    alertContainer.innerHTML = alertHTML;
+
+    // Auto-dismiss after 5 seconds
+    setTimeout(function() {
+        const alerts = alertContainer.querySelectorAll('.alert');
+        alerts.forEach(alert => {
+            try {
+                alert.classList.remove('show');
+                setTimeout(() => {
+                    if (alertContainer.contains(alert)) {
+                        alertContainer.removeChild(alert);
+                    }
+                }, 150);
+            } catch (error) {
+                console.error('Error removing alert:', error);
+            }
+        });
+    }, 5000);
+}
+</script>
+{% endblock %}

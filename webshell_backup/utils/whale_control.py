@@ -1,0 +1,294 @@
+import importlib
+import docker
+import traceback
+import datetime
+import uuid
+from flask import current_app
+
+from CTFd.utils import get_config
+
+# Import directly from whale plugin to ensure 100% compatibility
+whale_cache = importlib.import_module('CTFd.plugins.ctfd-whale.utils.cache')
+whale_docker = importlib.import_module('CTFd.plugins.ctfd-whale.utils.docker')
+CacheProvider = whale_cache.CacheProvider
+DockerUtils = whale_docker.DockerUtils
+
+from ..models import WebShellContainer, WebShellImage, db
+
+
+class ControlUtil:
+    """
+    Utility class for controlling WebShell containers using CTFd-whale approach
+    """
+    
+    @staticmethod
+    def try_add_container(user_id, image_id):
+        """
+        Create a new WebShell container using CTFd-whale approach
+        
+        Args:
+            user_id: User ID
+            image_id: WebShell image ID
+            
+        Returns:
+            (success, message, container_obj)
+        """
+        current_app.logger.info(f"[WebShell] Creating container for user {user_id} with image {image_id}")
+        
+        try:
+            # Get the image configuration
+            image = WebShellImage.query.filter_by(id=image_id).first()
+            if not image:
+                current_app.logger.warning(f"[WebShell] Invalid image ID: {image_id}")
+                return False, "Invalid image ID", None
+            
+            # Get available ports from the whale cache provider
+            cache = CacheProvider(app=current_app)
+            
+            # Use the same method as whale to get a port
+            port = cache.get_available_port()
+            if not port:
+                current_app.logger.warning("[WebShell] No available ports")
+                return False, "No available ports. Please wait for a few minutes.", None
+            
+            current_app.logger.info(f"[WebShell] Allocated port: {port}")
+            
+            # Create container record matching whale's approach
+            container = WebShellContainer(
+                user_id=user_id,
+                image_id=image_id,
+                desktop_port=port
+            )
+            
+            # Set UUID and password
+            container.uuid = str(uuid.uuid4())
+            container.password = "password"  # Fixed password for simplicity
+            container.status = 1  # Running
+            container.start_time = datetime.datetime.utcnow()
+            
+            current_app.logger.info(f"[WebShell] Container DB record created for user {user_id}")
+            
+            # Add to database
+            db.session.add(container)
+            db.session.commit()
+            
+            # Create Docker container using whale's approach
+            try:
+                current_app.logger.info(f"[WebShell] Creating Docker container for user {user_id}")
+                ControlUtil._create_container(container)
+                current_app.logger.info(f"[WebShell] Docker container created successfully for user {user_id}")
+                return True, "Container created successfully", container
+            except Exception as e:
+                current_app.logger.exception(f"[WebShell] Error creating Docker container: {str(e)}")
+                db.session.delete(container)
+                db.session.commit()
+                
+                # Return port to the pool
+                cache.add_available_port(port)
+                
+                return False, f"Error creating Docker container: {str(e)}", None
+                
+        except Exception as e:
+            # Rollback on error
+            current_app.logger.exception(f"[WebShell] Error in container creation: {str(e)}")
+            db.session.rollback()
+            
+            # Return ports to the pool if they were allocated
+            try:
+                if port:
+                    cache = CacheProvider(app=current_app)
+                    cache.add_available_port(port)
+            except:
+                pass  # Ignore errors in cleanup
+                
+            return False, f"Error creating container: {str(e)}", None
+    
+    @staticmethod
+    def try_remove_container(user_id):
+        """
+        Remove a user's WebShell container using whale's approach
+        
+        Args:
+            user_id: User ID
+            
+        Returns:
+            (success, message)
+        """
+        current_app.logger.info(f"[WebShell] Removing container for user {user_id}")
+        
+        container = WebShellContainer.query.filter_by(user_id=user_id).first()
+        if not container:
+            current_app.logger.warning(f"[WebShell] No container found for user {user_id}")
+            return False, "No container found for this user"
+        
+        try:
+            # Use the same retry approach as whale
+            for _ in range(3):  # Same as whale's "onerror_retry_cnt"
+                try:
+                    # Remove Docker container
+                    current_app.logger.info(f"[WebShell] Removing Docker container for user {user_id}")
+                    ControlUtil._remove_container(container)
+                    current_app.logger.info(f"[WebShell] Docker container removed for user {user_id}")
+                    
+                    # Free up port
+                    if container.desktop_port:
+                        cache = CacheProvider(app=current_app)
+                        current_app.logger.info(f"[WebShell] Returning port {container.desktop_port} to pool")
+                        cache.add_available_port(container.desktop_port)
+                    
+                    # Remove DB record
+                    current_app.logger.info(f"[WebShell] Removing DB record for user {user_id}")
+                    db.session.delete(container)
+                    db.session.commit()
+                    
+                    return True, "Container removed successfully"
+                except Exception:
+                    traceback.print_exc()
+            
+            # If all retries failed
+            return False, "Failed when destroying container, please contact admin!"
+            
+        except Exception as e:
+            current_app.logger.exception(f"[WebShell] Error removing container: {str(e)}")
+            traceback.print_exc()
+            return False, f"Error removing container: {str(e)}"
+            
+    @staticmethod
+    def try_renew_container(user_id):
+        """
+        Renew a user's WebShell container timeout using whale's approach
+        
+        Args:
+            user_id: User ID
+            
+        Returns:
+            (success, message)
+        """
+        current_app.logger.info(f"[WebShell] Renewing container for user {user_id}")
+        
+        container = WebShellContainer.query.filter_by(user_id=user_id).first()
+        if not container:
+            current_app.logger.warning(f"[WebShell] No container found for user {user_id}")
+            return False, "No container found for this user"
+        
+        # Get container timeout - use the same approach as whale
+        timeout = int(get_config("whale:docker_timeout", "3600"))
+        
+        # Update container start time - similar to whale approach
+        container.start_time = container.start_time + datetime.timedelta(seconds=timeout)
+        
+        # Check if the new start time is in the future - same as whale
+        if container.start_time > datetime.datetime.utcnow():
+            container.start_time = datetime.datetime.utcnow()
+        else:
+            return False, "Invalid container"
+            
+        container.renew_count += 1
+        
+        try:
+            db.session.commit()
+            current_app.logger.info(f"[WebShell] Container renewed for user {user_id}")
+            return True, "Container renewed successfully"
+        except Exception as e:
+            current_app.logger.exception(f"[WebShell] Error renewing container: {str(e)}")
+            db.session.rollback()
+            return False, f"Error renewing container: {str(e)}"
+            
+    @staticmethod
+    def _create_container(container):
+        """
+        Create a Docker container for WebShell using a direct match to whale
+        
+        Args:
+            container: WebShellContainer object
+        """
+        current_app.logger.info(f"[WebShell] Creating Docker container for user {container.user_id} with image {container.image.docker_image}")
+        
+        # Initialize Docker client - same as whale
+        docker_api_url = get_config("whale:docker_api_url", "unix:///var/run/docker.sock")
+        client = docker.DockerClient(base_url=docker_api_url)
+        current_app.logger.info(f"[WebShell] Connected to Docker API: {docker_api_url}")
+        
+        # Get container configuration
+        image = container.image
+        container_name = f'{container.user_id}-{container.uuid}'
+        
+        # Get DNS config - same as whale
+        dns = get_config("whale:docker_dns", "").split(",")
+        dns = [d for d in dns if d]  # Filter empty strings
+        
+        # Create network - same as whale
+        network = get_config("whale:docker_auto_connect_network", "ctfd_frp-containers")
+        
+        # Select appropriate node - using whale's node selection
+        node = DockerUtils.choose_node(
+            image.docker_image,
+            get_config("whale:docker_swarm_nodes", "").split(",")
+        )
+        
+        # Convert memory limit - same as whale
+        mem_limit = DockerUtils.convert_readable_text(image.memory_limit)
+        
+        # Create service - match whale's approach exactly
+        try:
+            client.services.create(
+                image=image.docker_image,
+                name=container_name,
+                # Use whale's environment pattern but add Kasm vars
+                env={
+                    'FLAG': f"CTF{{webshell_{container.uuid}}}",
+                    'PASSWORD': container.password,
+                    'KASM_VNC_PW': container.password,
+                    'KASM_USER': "kasm_user"
+                },
+                dns_config=docker.types.DNSConfig(nameservers=dns) if dns else None,
+                networks=[network],
+                resources=docker.types.Resources(
+                    mem_limit=mem_limit,
+                    cpu_limit=int(image.cpu_limit * 1e9)
+                ),
+                labels={
+                    'whale_id': f'{container.user_id}-{container.uuid}',
+                    'webshell_id': f'{container.user_id}-{container.uuid}'
+                },
+                constraints=[f'node.labels.name=={node}'],
+                # Use whale's port approach for direct access
+                endpoint_spec=docker.types.EndpointSpec(
+                    ports=[
+                        {'published_port': container.desktop_port, 'target_port': 6901, 'protocol': 'tcp'}
+                    ]
+                ),
+                # Add shared memory mount for Kasm but keep rest of config like whale
+                mounts=[
+                    docker.types.Mount(
+                        target='/dev/shm',
+                        source=None,
+                        type='tmpfs',
+                        read_only=False,
+                        tmpfs_size=536870912  # 512MB
+                    )
+                ]
+            )
+            current_app.logger.info(f"[WebShell] Docker service created for user {container.user_id}")
+        except Exception as e:
+            current_app.logger.exception(f"[WebShell] Error creating Docker service: {str(e)}")
+            raise e
+    
+    @staticmethod
+    def _remove_container(container):
+        """
+        Remove a Docker container - exactly like whale
+        
+        Args:
+            container: WebShellContainer object
+        """
+        # This is identical to whale's approach
+        whale_id = f'{container.user_id}-{container.uuid}'
+        
+        # Initialize Docker client
+        docker_api_url = get_config("whale:docker_api_url", "unix:///var/run/docker.sock")
+        client = docker.DockerClient(base_url=docker_api_url)
+        
+        # Remove services by label - just like whale
+        for s in client.services.list(filters={'label': f'whale_id={whale_id}'}):
+            s.remove()

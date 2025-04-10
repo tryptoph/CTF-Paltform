@@ -172,9 +172,20 @@ def get_plugin_names():
     modules = sorted(glob.glob(app.plugins_dir + "/*"))
     blacklist = {"__pycache__"}
     plugins = []
+    
+    # Check for plugin whitelist
+    whitelist = os.environ.get('PLUGIN_WHITELIST')
+    if whitelist:
+        whitelist = whitelist.split(',')
+        app.logger.info(f"Using plugin whitelist: {whitelist}")
+    
     for module in modules:
         module_name = os.path.basename(module)
         if os.path.isdir(module) and module_name not in blacklist:
+            # Only add plugins in the whitelist if one is specified
+            if whitelist and module_name not in whitelist:
+                app.logger.info(f"Skipping plugin {module_name} (not in whitelist)")
+                continue
             plugins.append(module_name)
     return plugins
 

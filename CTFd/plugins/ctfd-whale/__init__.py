@@ -34,22 +34,26 @@ def load(app):
         else:
             for key, val in DBConfig.get_all_configs().items():
                 set_config('whale:' + key, val)
-    
+
     # Force update the direct template with a properly centered URL
     with app.app_context():
         direct_template = WhaleRedirectTemplate.query.filter_by(key='direct').first()
         if direct_template:
-            direct_template.access_template = '<div style="text-align: center; margin: 15px 0;"><a href="http://localhost:{{ container.port }}" target="_blank" style="font-size: 16px; font-weight: bold; padding: 8px 16px; background-color: #f8f9fa; border-radius: 4px; text-decoration: none; display: inline-block;">localhost:{{ container.port }}</a></div>'
-            
+            hostname = get_config('whale:domain_hostname', 'localhost')
+            # Check if HTTPS is required from web_desktop plugin
+            https_required = get_config('web_desktop:https_required', 'true') == 'true'
+            protocol = 'https' if https_required else 'http'
+            direct_template.access_template = f'<div style="text-align: center; margin: 15px 0;"><a href="{protocol}://{hostname}:{{{{ container.port }}}}" target="_blank" style="font-size: 16px; font-weight: bold; padding: 8px 16px; background-color: #f8f9fa; border-radius: 4px; text-decoration: none; display: inline-block;">{hostname}:{{{{ container.port }}}}</a></div>'
+
             # Force refresh flag to ensure changes are applied
             refresh_config = WhaleConfig.query.filter_by(key='refresh').first()
             if refresh_config:
                 refresh_config.value = 'true'
             else:
                 app.db.session.add(WhaleConfig('refresh', 'true'))
-                
+
             app.db.session.commit()
-            print("[CTFd Whale] Updated direct template with centered URL")
+            print(f"[CTFd Whale] Updated direct template with centered URL using hostname: {hostname}")
 
     register_plugin_assets_directory(
         app, base_path=f"/plugins/{plugin_name}/assets",

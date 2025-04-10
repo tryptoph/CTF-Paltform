@@ -1,0 +1,71 @@
+/* Web Desktop Admin CSS */
+
+.template-card {
+    transition: all 0.3s ease;
+    margin-bottom: 20px;
+}
+
+.template-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.template-icon {
+    max-height: 80px;
+    margin-bottom: 15px;
+}
+
+.template-actions {
+    display: flex;
+    justify-content: space-between;
+}
+
+.container-list {
+    margin-top: 20px;
+}
+
+.container-card {
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+}
+
+.container-card:hover {
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.container-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.container-info {
+    margin-bottom: 10px;
+}
+
+.container-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.badge-recommended {
+    background-color: #28a745;
+    color: white;
+    margin-left: 10px;
+}
+
+.template-form-group {
+    margin-bottom: 20px;
+}
+
+.template-form-label {
+    font-weight: bold;
+}
+
+.nav-pills .nav-link.active {
+    background-color: #007bff;
+}
+
+.tab-content {
+    padding-top: 20px;
+}

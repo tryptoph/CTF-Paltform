@@ -1,0 +1,75 @@
+{% extends "whale_base.html" %}
+
+{% block menu %}
+    <li class="nav-item">
+        <a class="nav-link active" data-toggle="pill" href="#settings">Settings</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('web_desktop.admin_templates') }}">Templates</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('web_desktop.admin_containers') }}">Containers</a>
+    </li>
+{% endblock %}
+
+{% block panel %}
+    <div role="tabpanel" class="tab-pane config-section active" id="settings">
+        <form method="POST" action="{{ url_for('web_desktop.update_settings') }}" class="settings-form">
+            <input type="hidden" name="nonce" value="{{ nonce }}">
+            
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5><i class="fas fa-globe mr-2"></i> Domain Settings</h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="domain">Domain Hostname</label>
+                        <input type="text" class="form-control" id="domain" name="domain" value="{{ hostname }}">
+                        <small class="form-text text-muted">The hostname that users will use to access desktop environments</small>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="custom-control custom-switch">
+                            <input type="checkbox" class="custom-control-input" id="https_required" name="https_required" {% if https_required %}checked{% endif %}>
+                            <label class="custom-control-label" for="https_required">Require HTTPS</label>
+                        </div>
+                        <small class="form-text text-muted">Desktop environments will be accessed via HTTPS for security</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5><i class="fas fa-clock mr-2"></i> Container Settings</h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="docker_timeout">Container Timeout (seconds)</label>
+                        <input type="number" class="form-control" id="docker_timeout" name="docker_timeout" value="{{ config.get('web_desktop:docker_timeout', 3600) }}">
+                        <small class="form-text text-muted">How long containers will run before expiring</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="docker_max_renew_count">Maximum Renewal Count</label>
+                        <input type="number" class="form-control" id="docker_max_renew_count" name="docker_max_renew_count" value="{{ config.get('web_desktop:docker_max_renew_count', 5) }}">
+                        <small class="form-text text-muted">Maximum number of times a container can be renewed</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group text-right">
+                <button type="submit" class="btn btn-lg btn-primary">
+                    <i class="fas fa-save mr-2"></i> Save Settings
+                </button>
+            </div>
+        </form>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add any settings page specific JavaScript here
+});
+</script>
+{% endblock %}

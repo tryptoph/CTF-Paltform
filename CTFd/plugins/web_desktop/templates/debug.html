@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block stylesheets %}
+<link rel="stylesheet" href="{{ url_for('plugins.web_desktop.assets', path='css/webdesktop.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="jumbotron jumbotron-fluid bg-info text-white">
+    <div class="container">
+        <h1><i class="fas fa-bug mr-2"></i> Web Desktop Debug</h1>
+        <p>Session and authentication debugging information</p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Session Information</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <strong>Current Nonce:</strong> {{ nonce }}
+                    </div>
+                    <div class="alert alert-info">
+                        <strong>Current CSRF Nonce:</strong> {{ csrf_nonce }}
+                    </div>
+                    
+                    <h5>Session Data:</h5>
+                    <pre class="bg-light p-3">{{ session_data|tojson(indent=2) }}</pre>
+                    
+                    <div class="mt-4">
+                        <a href="{{ url_for('web_desktop.admin_templates') }}" class="btn btn-primary">
+                            <i class="fas fa-arrow-left mr-2"></i> Back to Templates
+                        </a>
+                        <a href="{{ url_for('web_desktop.admin_panel') }}" class="btn btn-secondary">
+                            <i class="fas fa-cog mr-2"></i> Admin Settings
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-warning">
+                    <h4 class="mb-0">Test CSRF Token</h4>
+                </div>
+                <div class="card-body">
+                    <p>Use this form to test if your CSRF token is working correctly:</p>
+                    
+                    <div class="form-group">
+                        <label for="test-csrf-token">CSRF Token</label>
+                        <input type="text" class="form-control" id="test-csrf-token" value="{{ nonce }}" readonly>
+                    </div>
+                    
+                    <button id="test-csrf-btn" class="btn btn-warning">Test API Call</button>
+                    
+                    <div id="test-result" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const testBtn = document.getElementById('test-csrf-btn');
+    const resultDiv = document.getElementById('test-result');
+    const csrfToken = document.getElementById('test-csrf-token').value;
+    
+    testBtn.addEventListener('click', function() {
+        resultDiv.innerHTML = '<div class="alert alert-info">Testing API call with CSRF token...</div>';
+        
+        fetch('/api/v1/users/me', {
+            method: 'GET',
+            credentials: 'same-origin',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'CSRF-Token': csrfToken
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            resultDiv.innerHTML = `
+                <div class="alert alert-success">
+                    <h5>Success! API call worked.</h5>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                </div>
+            `;
+        })
+        .catch(error => {
+            resultDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    <h5>Error!</h5>
+                    <p>${error.message}</p>
+                </div>
+            `;
+        });
+    });
+});
+</script>
+{% endblock %}

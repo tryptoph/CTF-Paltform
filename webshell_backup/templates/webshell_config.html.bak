@@ -1,0 +1,330 @@
+{% extends "admin/base.html" %}
+
+{% block stylesheets %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('plugins.webshell.assets', path='css/webshell-admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="jumbotron">
+  <div class="container">
+    <h1>Web Desktop Administration</h1>
+    <p>Manage desktop environments and containers</p>
+  </div>
+</div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12">
+      <div id="webshell-admin-error" class="alert alert-danger" style="display: none;">
+        <span id="webshell-admin-error-msg"></span>
+      </div>
+      
+      <div id="webshell-admin-success" class="alert alert-success" style="display: none;">
+        <span id="webshell-admin-success-msg"></span>
+      </div>
+    </div>
+  </div>
+  
+  <ul class="nav nav-tabs" id="webshell-admin-tabs" role="tablist">
+    <li class="nav-item">
+      <a class="nav-link active" id="images-tab" data-toggle="tab" href="#images-content" role="tab">
+        Images
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" id="containers-tab" data-toggle="tab" href="#containers-content" role="tab">
+        Active Containers
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" id="settings-tab" data-toggle="tab" href="#settings-content" role="tab">
+        Settings
+      </a>
+    </li>
+  </ul>
+  
+  <div class="tab-content p-3" id="webshell-admin-tab-content">
+    <!-- Images Tab -->
+    <div class="tab-pane fade show active" id="images-content" role="tabpanel">
+      <div class="row mb-3">
+        <div class="col-md-12">
+          <button class="btn btn-success" id="add-image-btn">
+            <i class="fas fa-plus"></i> Add Image
+          </button>
+        </div>
+      </div>
+      
+      <div class="table-responsive">
+        <table class="table table-bordered" id="images-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Docker Image</th>
+              <th>Resources</th>
+              <th>Has Desktop</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for image in images %}
+            <tr>
+              <td>{{ image.id }}</td>
+              <td>{{ image.name }}</td>
+              <td><code>{{ image.docker_image }}</code></td>
+              <td>{{ image.memory_limit }} / {{ image.cpu_limit }} CPU</td>
+              <td>
+                {% if image.has_desktop %}
+                <span class="badge badge-success">Yes</span>
+                {% else %}
+                <span class="badge badge-secondary">No</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if image.active %}
+                <span class="badge badge-success">Active</span>
+                {% else %}
+                <span class="badge badge-danger">Inactive</span>
+                {% endif %}
+              </td>
+              <td>
+                <div class="btn-group">
+                  <button class="btn btn-sm btn-primary edit-image-btn" data-image-id="{{ image.id }}">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="btn btn-sm btn-danger delete-image-btn" data-image-id="{{ image.id }}">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+    <!-- Containers Tab -->
+    <div class="tab-pane fade" id="containers-content" role="tabpanel">
+      <div class="table-responsive">
+        <table class="table table-bordered" id="containers-table">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Image</th>
+              <th>Started</th>
+              <th>Time Remaining</th>
+              <th>Port</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Populated via AJAX -->
+          </tbody>
+        </table>
+      </div>
+      <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center" id="containers-pagination">
+          <!-- Pagination links added via JS -->
+        </ul>
+      </nav>
+    </div>
+    
+    <!-- Settings Tab -->
+    <div class="tab-pane fade" id="settings-content" role="tabpanel">
+      <div class="row">
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header">
+              <h5>General Settings</h5>
+            </div>
+            <div class="card-body">
+              <form id="general-settings-form">
+                <div class="form-group">
+                  <label for="max_container_count">Maximum Container Count</label>
+                  <input type="number" class="form-control" id="max_container_count" name="max_container_count" 
+                         min="1" max="1000">
+                  <small class="form-text text-muted">Maximum number of containers that can run simultaneously</small>
+                </div>
+                
+                <div class="form-group">
+                  <label for="max_renew_count">Maximum Renewal Count</label>
+                  <input type="number" class="form-control" id="max_renew_count" name="max_renew_count" 
+                         min="0" max="100">
+                  <small class="form-text text-muted">Maximum times a user can renew their container</small>
+                </div>
+                
+                <div class="form-group">
+                  <label for="domain">Access Domain</label>
+                  <input type="text" class="form-control" id="domain" name="domain">
+                  <small class="form-text text-muted">Domain used for WebShell URLs (e.g., ctf.example.com)</small>
+                </div>
+                
+                <div class="form-group">
+                  <div class="custom-control custom-switch">
+                    <input type="checkbox" class="custom-control-input" id="enable_desktop" name="enable_desktop">
+                    <label class="custom-control-label" for="enable_desktop">Enable Desktop Access</label>
+                  </div>
+                  <small class="form-text text-muted">Allow users to access desktop environments</small>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Save General Settings</button>
+              </form>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header">
+              <h5>Resource Limits</h5>
+            </div>
+            <div class="card-body">
+              <form id="resource-settings-form">
+                <div class="form-group">
+                  <label for="max_memory">Default Maximum Memory</label>
+                  <input type="text" class="form-control" id="max_memory" name="max_memory" 
+                         placeholder="512m">
+                  <small class="form-text text-muted">Default maximum memory per container (e.g., 512m, 1g)</small>
+                </div>
+                
+                <div class="form-group">
+                  <label for="max_cpu">Default Maximum CPU</label>
+                  <input type="number" class="form-control" id="max_cpu" name="max_cpu" 
+                         step="0.1" min="0.1" max="8">
+                  <small class="form-text text-muted">Default maximum CPU per container (in cores)</small>
+                </div>
+                
+                <div class="form-group">
+                  <label for="default_timeout">Default Timeout (seconds)</label>
+                  <input type="number" class="form-control" id="default_timeout" name="default_timeout" 
+                         min="60" max="86400">
+                  <small class="form-text text-muted">Default container timeout in seconds</small>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Save Resource Settings</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Image Modal -->
+<div class="modal fade" id="image-modal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="image-modal-title">Add Image</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="image-form">
+          <input type="hidden" id="image-id" name="id">
+          
+          <div class="form-group">
+            <label for="image-name">Name</label>
+            <input type="text" class="form-control" id="image-name" name="name" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="image-description">Description</label>
+            <textarea class="form-control" id="image-description" name="description" rows="3"></textarea>
+          </div>
+          
+          <div class="form-group">
+            <label for="image-docker-image">Docker Image</label>
+            <input type="text" class="form-control" id="image-docker-image" name="docker_image" required>
+            <small class="form-text text-muted">Docker image name (e.g., ubuntu:latest)</small>
+          </div>
+          
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label for="image-memory-limit">Memory Limit</label>
+                <input type="text" class="form-control" id="image-memory-limit" name="memory_limit" placeholder="256m">
+                <small class="form-text text-muted">Memory limit (e.g., 256m, 1g)</small>
+              </div>
+            </div>
+            
+            <div class="col-md-6">
+              <div class="form-group">
+                <label for="image-cpu-limit">CPU Limit</label>
+                <input type="number" class="form-control" id="image-cpu-limit" name="cpu_limit" step="0.1" min="0.1" max="8" placeholder="0.5">
+                <small class="form-text text-muted">CPU limit in cores</small>
+              </div>
+            </div>
+          </div>
+          
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label for="image-timeout">Timeout (seconds)</label>
+                <input type="number" class="form-control" id="image-timeout" name="timeout" min="60" max="86400" placeholder="3600">
+                <small class="form-text text-muted">Container timeout in seconds</small>
+              </div>
+            </div>
+            
+            <div class="col-md-6">
+              <div class="form-group">
+                <label for="image-port">Desktop Port</label>
+                <input type="number" class="form-control" id="image-port" name="port" min="1" max="65535" placeholder="6901">
+                <small class="form-text text-muted">Port for desktop access (6901 for Kasm)</small>
+              </div>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <div class="custom-control custom-switch">
+              <input type="checkbox" class="custom-control-input" id="image-has-desktop" name="has_desktop" checked>
+              <label class="custom-control-label" for="image-has-desktop">Has Desktop Environment</label>
+            </div>
+          </div>
+          
+          <div id="desktop-options" style="display: none;">
+            <div class="form-group">
+              <label for="image-desktop-port">Desktop Port</label>
+              <input type="number" class="form-control" id="image-desktop-port" name="desktop_port" min="1" max="65535" placeholder="6901">
+              <small class="form-text text-muted">Port for desktop access (same as primary port for Kasm)</small>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <div class="custom-control custom-switch">
+              <input type="checkbox" class="custom-control-input" id="image-active" name="active" checked>
+              <label class="custom-control-label" for="image-active">Active</label>
+            </div>
+            <small class="form-text text-muted">Enable or disable this image</small>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="save-image-btn">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="{{ url_for('plugins.webshell.assets', path='js/webshell-admin.js') }}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    WebShellAdmin.init({
+      imagesApiEndpoint: '/api/v1/plugins/webshell/admin/images',
+      containersApiEndpoint: '/api/v1/plugins/webshell/admin/containers',
+      configApiEndpoint: '/api/v1/plugins/webshell/admin/config',
+      csrfToken: '{{ csrf_nonce }}'
+    });
+  });
+</script>
+{% endblock %}

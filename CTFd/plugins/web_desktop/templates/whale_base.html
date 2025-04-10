@@ -1,0 +1,31 @@
+{% extends "admin/base.html" %}
+
+{% block stylesheets %}
+<link rel="stylesheet" href="{{ url_for('plugins.web_desktop.assets', path='css/webdesktop.css') }}">
+<link rel="stylesheet" href="{{ url_for('plugins.web_desktop.assets', path='css/webdesktop-admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="jumbotron">
+    <div class="container">
+        <h1>Web Desktop Admin</h1>
+        <p>Manage desktop environments for your CTF platform</p>
+    </div>
+</div>
+<div class="container">
+    <div class="row">
+        <div class="col-md-3">
+            <ul class="nav nav-pills flex-column">
+                {% block menu %}
+                {% endblock %}
+            </ul>
+        </div>
+        <div class="col-md-9">
+            <div class="tab-content">
+                {% block panel %}
+                {% endblock %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

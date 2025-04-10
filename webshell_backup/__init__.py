@@ -1,0 +1,142 @@
+import os
+from flask import Blueprint, render_template, current_app, session, request, jsonify
+
+from CTFd.api import CTFd_API_v1
+from CTFd.plugins import (
+    register_plugin_assets_directory,
+    register_admin_plugin_menu_bar,
+    register_user_page_menu_bar
+)
+from CTFd.utils import get_config, set_config
+from CTFd.utils.decorators import admins_only, authed_only
+from CTFd.utils.security.csrf import generate_nonce
+from CTFd.utils.user import get_current_user
+
+from .api import admin_namespace, user_namespace
+from .models import WebShellConfig, WebShellImage
+from .utils.setup import setup_default_configs
+
+
+def load(app):
+    # Register plugin name
+    plugin_name = __name__.split('.')[-1]
+    app.logger.info(f"[CTFd WebShell] Loading plugin {plugin_name}")
+    set_config('webshell:plugin_name', plugin_name)
+    
+    # Create database tables
+    app.db.create_all()
+    
+    # Setup default configurations if not exists
+    if not get_config("webshell:setup"):
+        app.logger.info("[CTFd WebShell] Setting up default configurations")
+        setup_default_configs()
+        set_config("webshell:setup", "true")
+    
+    # Use the same domain as whale plugin for consistency
+    whale_domain = get_config("whale:domain", "localhost")
+    if whale_domain:
+        app.logger.info(f"[CTFd WebShell] Using domain from whale plugin: {whale_domain}")
+        set_config("webshell:domain", whale_domain)
+    
+    # Register assets directory
+    register_plugin_assets_directory(
+        app, base_path=f"/plugins/{plugin_name}/assets",
+        endpoint='plugins.webshell.assets'
+    )
+    
+    # Register admin menu entry
+    register_admin_plugin_menu_bar(
+        title='WebShell',
+        route='/plugins/webshell/admin'
+    )
+    
+    # Register user menu entry
+    register_user_page_menu_bar(
+        title='Web Desktop',
+        route='/webshell'
+    )
+    
+    # Register API endpoints - aligned with CTFd-whale approach
+    app.logger.info("[CTFd WebShell] Registering API endpoints")
+    CTFd_API_v1.add_namespace(admin_namespace, path="/plugins/webshell/admin")
+    CTFd_API_v1.add_namespace(user_namespace, path="/plugins/webshell")
+    
+    # Create Blueprint
+    page_blueprint = Blueprint(
+        "webshell",
+        __name__,
+        template_folder="templates",
+        static_folder="assets",
+        url_prefix="/plugins/webshell"
+    )
+    
+    # Routes for WebShell user page
+    @app.route('/webshell', methods=['GET'])
+    def webshell_view():
+        app.logger.info("[CTFd WebShell] User accessed WebShell page")
+        # Get current user
+        current_user = get_current_user()
+        
+        # Generate CSRF token and store it in the session
+        csrf_token = session.get('nonce')
+        if not csrf_token:
+            csrf_token = generate_nonce()
+            session['nonce'] = csrf_token
+            
+        # Get active WebShell images for display
+        images = WebShellImage.query.filter_by(active=True).all() if current_user else []
+        
+        app.logger.info(f"[CTFd WebShell] Found {len(images)} active images")
+        return render_template(
+            'webshell.html',
+            nonce=csrf_token,
+            plugin_name=plugin_name,
+            images=images,
+            current_user=current_user,
+            title="Web Desktop"
+        )
+    
+    # Admin routes
+    @page_blueprint.route('/admin', methods=['GET'])
+    @admins_only
+    def admin_settings():
+        app.logger.info("[CTFd WebShell] Admin accessed WebShell settings")
+        
+        # Generate CSRF token or get from session
+        csrf_token = session.get('nonce')
+        if not csrf_token:
+            csrf_token = generate_nonce()
+            session['nonce'] = csrf_token
+            
+        return render_template(
+            'webshell_config.html',
+            images=WebShellImage.query.all(),
+            csrf_nonce=csrf_token,
+            current_user=get_current_user()
+        )
+    
+    # Session debug endpoint
+    @app.route('/webshell/session-test', methods=['GET'])
+    def webshell_session_test():
+        """Endpoint to test session state for debugging"""
+        user = get_current_user()
+        
+        response = jsonify({
+            'session_id': session.get('id'),
+            'authenticated': user is not None,
+            'user': user.name if user else None,
+            'session_keys': list(session.keys())
+        })
+        
+        # Ensure cookies are set correctly
+        response.headers['Cache-Control'] = 'no-cache, no-store'
+        response.headers['Pragma'] = 'no-cache'
+        
+        return response
+        
+    # Register blueprint with the app
+    app.register_blueprint(page_blueprint)
+    
+    app.logger.info("[CTFd WebShell] Plugin loaded successfully")
+    
+    return app

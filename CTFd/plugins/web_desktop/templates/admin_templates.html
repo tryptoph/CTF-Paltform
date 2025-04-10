@@ -1,0 +1,451 @@
+{% extends "whale_base.html" %}
+
+{% block menu %}
+    <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('web_desktop.admin_panel') }}">Settings</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link active" data-toggle="pill" href="#templates">Templates</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('web_desktop.admin_containers') }}">Containers</a>
+    </li>
+
+    <li class="nav-item nav-link">
+        <button class="btn btn-success" id="add-template-btn" data-toggle="modal" data-target="#addTemplateModal">
+            <i class="fas fa-plus-circle mr-2"></i> Add Template
+        </button>
+    </li>
+{% endblock %}
+
+{% block panel %}
+    <div role="tabpanel" class="tab-pane active" id="templates">
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle mr-2"></i>
+            Templates define the desktop environments available to users. Each template is based on a Docker image.
+        </div>
+
+        <div class="row template-grid">
+            {% for template in templates %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card template-card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div>
+                            <img src="{{ url_for('plugins.web_desktop.assets', path='img/' + template.icon) }}"
+                                alt="{{ template.name }}" width="24" height="24" class="mr-2"
+                                onerror="this.onerror=null;this.src='{{ url_for('plugins.web_desktop.assets', path='img/desktop-icon.svg') }}';">
+                            {{ template.name }}
+                        </div>
+                        <div>
+                            {% if template.recommended %}
+                            <span class="badge badge-success">Recommended</span>
+                            {% endif %}
+                            {% if template.is_enabled %}
+                            <span class="badge badge-primary">Enabled</span>
+                            {% else %}
+                            <span class="badge badge-danger">Disabled</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-center mb-3">
+                            <img src="{{ url_for('plugins.web_desktop.assets', path='img/' + template.icon) }}"
+                                alt="{{ template.name }}" class="template-icon"
+                                onerror="this.onerror=null;this.src='{{ url_for('plugins.web_desktop.assets', path='img/desktop-icon.svg') }}';">
+                        </div>
+
+                        <p class="card-text">{{ template.description }}</p>
+
+                        <div class="template-details">
+                            <div class="detail-item">
+                                <span class="detail-label"><i class="fas fa-server"></i> Image:</span>
+                                <code class="detail-value">{{ template.docker_image }}</code>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label"><i class="fas fa-microchip"></i> CPU:</span>
+                                <span class="detail-value">{{ template.cpu_limit }}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label"><i class="fas fa-memory"></i> Memory:</span>
+                                <span class="detail-value">{{ template.memory_limit }}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label"><i class="fas fa-network-wired"></i> Port:</span>
+                                <span class="detail-value">{{ template.desktop_port }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="btn-group w-100">
+                            <button class="btn btn-primary edit-template-btn" data-template-id="{{ template.id }}">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <form method="POST" action="{{ url_for('web_desktop.toggle_template', template_id=template.id) }}" class="d-inline">
+                                <input type="hidden" name="nonce" value="{{ nonce }}">
+                                <button type="submit" class="btn {% if template.is_enabled %}btn-warning{% else %}btn-success{% endif %}">
+                                    <i class="fas {% if template.is_enabled %}fa-toggle-off{% else %}fa-toggle-on{% endif %}"></i>
+                                    {% if template.is_enabled %}Disable{% else %}Enable{% endif %}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            {% if templates|length == 0 %}
+            <div class="col-12">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle mr-2"></i> No templates found. Add a template to get started.
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+{{ super() }}
+
+<!-- Add Template Modal -->
+<div class="modal fade" id="addTemplateModal" tabindex="-1" role="dialog" aria-labelledby="addTemplateModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addTemplateModalLabel"><i class="fas fa-plus-circle mr-2"></i> Add Desktop Template</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="POST" action="{{ url_for('web_desktop.add_template') }}" id="add-template-form">
+                <div class="modal-body">
+                    <input type="hidden" name="nonce" value="{{ nonce }}">
+
+                    <div class="form-row">
+                        <div class="form-group col-md-8">
+                            <label for="name">Template Name</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label for="icon">Icon</label>
+                            <select class="form-control" id="icon" name="icon">
+                                <option value="desktop-icon.svg">Default</option>
+                                <option value="kali-logo.svg">Kali Linux</option>
+                                <option value="ubuntu-logo.svg">Ubuntu</option>
+                                <option value="windows-logo.svg">Windows</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="docker_image">Docker Image</label>
+                        <input type="text" class="form-control" id="docker_image" name="docker_image" required placeholder="e.g., kasmweb/kali-rolling-desktop:1.14.0">
+                        <small class="form-text text-muted">The Docker image to use for this template (e.g., kasmweb/kali-rolling-desktop:1.14.0)</small>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="memory_limit">Memory Limit</label>
+                                <input type="text" class="form-control" id="memory_limit" name="memory_limit" value="2048m">
+                                <small class="form-text text-muted">Memory limit (e.g., 2048m, 4g)</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="cpu_limit">CPU Limit</label>
+                                <input type="number" class="form-control" id="cpu_limit" name="cpu_limit" value="2.0" step="0.1">
+                                <small class="form-text text-muted">CPU cores (e.g., 1.0, 2.0)</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="desktop_port">Desktop Port</label>
+                                <input type="number" class="form-control" id="desktop_port" name="desktop_port" value="6901">
+                                <small class="form-text text-muted">Port for Kasm: 6901</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="display_order">Display Order</label>
+                                <input type="number" class="form-control" id="display_order" name="display_order" value="0">
+                                <small class="form-text text-muted">Order in the template list</small>
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="form-group">
+                                <label for="connection_type">Connection Type</label>
+                                <select class="form-control" id="connection_type" name="connection_type">
+                                    <option value="direct">Direct Connection</option>
+                                </select>
+                                <small class="form-text text-muted">How users will connect to the desktop</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="custom-control custom-switch">
+                            <input type="checkbox" class="custom-control-input" id="is_enabled" name="is_enabled" checked>
+                            <label class="custom-control-label" for="is_enabled">Enabled</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="custom-control custom-switch">
+                            <input type="checkbox" class="custom-control-input" id="recommended" name="recommended">
+                            <label class="custom-control-label" for="recommended">Recommended</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Template</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Template Modal -->
+<div class="modal fade" id="editTemplateModal" tabindex="-1" role="dialog" aria-labelledby="editTemplateModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editTemplateModalLabel"><i class="fas fa-edit mr-2"></i> Edit Desktop Template</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="edit-template-form">
+                <div class="modal-body">
+                    <input type="hidden" name="nonce" value="{{ nonce }}">
+                    <input type="hidden" id="edit-template-id" name="template_id">
+                    <input type="hidden" name="csrf_nonce" value="{{ csrf_nonce }}">
+
+                    <div class="form-row">
+                        <div class="form-group col-md-8">
+                            <label for="edit-name">Template Name</label>
+                            <input type="text" class="form-control" id="edit-name" name="name" required>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label for="edit-icon">Icon</label>
+                            <select class="form-control" id="edit-icon" name="icon">
+                                <option value="desktop-icon.svg">Default</option>
+                                <option value="kali-logo.svg">Kali Linux</option>
+                                <option value="ubuntu-logo.svg">Ubuntu</option>
+                                <option value="windows-logo.svg">Windows</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-description">Description</label>
+                        <textarea class="form-control" id="edit-description" name="description" rows="3"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-docker_image">Docker Image</label>
+                        <input type="text" class="form-control" id="edit-docker_image" name="docker_image" required>
+                        <small class="form-text text-muted">The Docker image to use for this template</small>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="edit-memory_limit">Memory Limit</label>
+                                <input type="text" class="form-control" id="edit-memory_limit" name="memory_limit">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="edit-cpu_limit">CPU Limit</label>
+                                <input type="number" class="form-control" id="edit-cpu_limit" name="cpu_limit" step="0.1">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="edit-desktop_port">Desktop Port</label>
+                                <input type="number" class="form-control" id="edit-desktop_port" name="desktop_port">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="edit-display_order">Display Order</label>
+                                <input type="number" class="form-control" id="edit-display_order" name="display_order">
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="form-group">
+                                <label for="edit-connection_type">Connection Type</label>
+                                <select class="form-control" id="edit-connection_type" name="connection_type">
+                                    <option value="direct">Direct Connection</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="custom-control custom-switch">
+                            <input type="checkbox" class="custom-control-input" id="edit-is_enabled" name="is_enabled">
+                            <label class="custom-control-label" for="edit-is_enabled">Enabled</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="custom-control custom-switch">
+                            <input type="checkbox" class="custom-control-input" id="edit-recommended" name="recommended">
+                            <label class="custom-control-label" for="edit-recommended">Recommended</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Edit template button click handler
+    const editButtons = document.querySelectorAll('.edit-template-btn');
+    editButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const templateId = this.getAttribute('data-template-id');
+            fetchTemplateDetails(templateId);
+        });
+    });
+
+    // Edit template form submit handler
+    const editForm = document.getElementById('edit-template-form');
+    if (editForm) {
+        editForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const templateId = document.getElementById('edit-template-id').value;
+            updateTemplate(templateId, new FormData(editForm));
+        });
+    }
+
+    // Function to fetch template details
+    function fetchTemplateDetails(templateId) {
+        fetch(`/api/v1/plugins/webdesktop/admin/template/${templateId}`, {
+            method: 'GET',
+            credentials: 'same-origin',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                populateEditForm(data.data);
+                $('#editTemplateModal').modal('show');
+            } else {
+                alert('Error fetching template details: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error fetching template details');
+        });
+    }
+
+    // Function to populate edit form
+    function populateEditForm(template) {
+        document.getElementById('edit-template-id').value = template.id;
+        document.getElementById('edit-name').value = template.name;
+        document.getElementById('edit-description').value = template.description || '';
+        document.getElementById('edit-docker_image').value = template.docker_image;
+        document.getElementById('edit-memory_limit').value = template.memory_limit;
+        document.getElementById('edit-cpu_limit').value = template.cpu_limit;
+        document.getElementById('edit-desktop_port').value = template.desktop_port;
+        document.getElementById('edit-display_order').value = template.display_order;
+        document.getElementById('edit-connection_type').value = template.connection_type;
+        document.getElementById('edit-icon').value = template.icon;
+        document.getElementById('edit-is_enabled').checked = template.is_enabled;
+        document.getElementById('edit-recommended').checked = template.recommended;
+    }
+
+    // Function to update template
+    function updateTemplate(templateId, formData) {
+        const data = {};
+        for (const [key, value] of formData.entries()) {
+            if (key === 'is_enabled' || key === 'recommended') {
+                data[key] = true; // Checkbox is checked
+            } else {
+                data[key] = value;
+            }
+        }
+
+        // Handle unchecked checkboxes (they don't get included in FormData)
+        if (!formData.has('is_enabled')) {
+            data['is_enabled'] = false;
+        }
+        if (!formData.has('recommended')) {
+            data['recommended'] = false;
+        }
+
+        // Get CSRF token from form
+        const csrfNonce = document.querySelector('input[name="csrf_nonce"]').value;
+
+        console.log('Using CSRF token:', csrfNonce); // Debug log
+
+        fetch(`/api/v1/plugins/webdesktop/admin/template/${templateId}`, {
+            method: 'PUT',
+            credentials: 'same-origin',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'CSRF-Token': csrfNonce,
+                'X-CSRF-Token': csrfNonce, // Try alternative header name
+                'Nonce': csrfNonce // Try another alternative
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                $('#editTemplateModal').modal('hide');
+                // Show success message
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-success alert-dismissible fade show';
+                alertDiv.innerHTML = `
+                    <strong>Success!</strong> Template updated successfully.
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                `;
+                document.querySelector('.tab-content').prepend(alertDiv);
+
+                // Reload the page after a short delay
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                alert('Error updating template: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error updating template');
+        });
+    }
+});
+</script>
+{% endblock %}

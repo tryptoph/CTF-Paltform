@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Redirecting to Web Desktop</title>
+    <meta http-equiv="refresh" content="0; url=/plugins/web_desktop/">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 100px;
+        }
+        .spinner {
+            border: 16px solid #f3f3f3;
+            border-top: 16px solid #3498db;
+            border-radius: 50%;
+            width: 120px;
+            height: 120px;
+            animation: spin 2s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <h1>Redirecting to Web Desktop...</h1>
+    <div class="spinner"></div>
+    <p>If you are not redirected automatically, <a href="/plugins/web_desktop/">click here</a>.</p>
+</body>
+</html>

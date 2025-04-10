@@ -1,0 +1,381 @@
+{% extends "whale_base.html" %}
+
+{% block menu %}
+    <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('web_desktop.admin_panel') }}">Settings</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('web_desktop.admin_templates') }}">Templates</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link active" data-toggle="pill" href="#containers">Containers</a>
+    </li>
+    
+    <li class="nav-item nav-link">
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-secondary"
+                data-toggle="tooltip" title="Renew Containers" id="containers-renew-button">
+                <i class="btn-fa fas fa-sync"></i>
+            </button>
+            <button type="button" class="btn btn-outline-danger"
+                data-toggle="tooltip" title="Destroy Containers" id="containers-destroy-button">
+                <i class="btn-fa fas fa-times"></i>
+            </button>
+        </div>
+    </li>
+    
+    <li class="nav-item nav-link">
+        {% if view_mode == 'card' %}
+            <a href="?mode=list">Switch to list mode</a>
+        {% else %}
+            <a href="?mode=card">Switch to card mode</a>
+        {% endif %}
+    </li>
+{% endblock %}
+
+{% block panel %}
+    <div role="tabpanel" class="tab-pane active" id="containers">
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle mr-2"></i> 
+            Manage active desktop containers. You can renew or destroy containers as needed.
+        </div>
+        
+        {% if view_mode == 'card' %}
+        <!-- Card View -->
+        <div class="row">
+            {% for container in containers %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card container-card h-100">
+                    <div class="card-header container-header">
+                        <div>
+                            <img src="{{ url_for('plugins.web_desktop.assets', path='img/' + container.template.icon) }}"
+                                alt="{{ container.template.name }}" width="24" height="24" class="mr-2"
+                                onerror="this.onerror=null;this.src='{{ url_for('plugins.web_desktop.assets', path='img/desktop-icon.svg') }}';">
+                            {{ container.template.name }}
+                        </div>
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input container-checkbox" 
+                                   id="container-{{ container.id }}" data-container-id="{{ container.id }}">
+                            <label class="custom-control-label" for="container-{{ container.id }}"></label>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="container-info">
+                            <div class="detail-item">
+                                <span class="detail-label"><i class="fas fa-user"></i> User:</span>
+                                <span class="detail-value">{{ container.user.name }}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label"><i class="fas fa-clock"></i> Started:</span>
+                                <span class="detail-value">{{ container.start_time|date }}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label"><i class="fas fa-sync"></i> Renewals:</span>
+                                <span class="detail-value">{{ container.renew_count }}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label"><i class="fas fa-network-wired"></i> Port:</span>
+                                <span class="detail-value">{{ container.port }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="btn-group w-100">
+                            <a href="{{ container.user_access }}" target="_blank" class="btn btn-primary">
+                                <i class="fas fa-external-link-alt"></i> Access
+                            </a>
+                            <button class="btn btn-warning renew-container-btn" data-container-id="{{ container.id }}">
+                                <i class="fas fa-sync"></i> Renew
+                            </button>
+                            <button class="btn btn-danger destroy-container-btn" data-container-id="{{ container.id }}">
+                                <i class="fas fa-trash"></i> Destroy
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            
+            {% if containers|length == 0 %}
+            <div class="col-12">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle mr-2"></i> No active containers found.
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% else %}
+        <!-- List View -->
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th class="text-center">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="select-all-containers">
+                                <label class="form-check-label" for="select-all-containers"></label>
+                            </div>
+                        </th>
+                        <th>ID</th>
+                        <th>User</th>
+                        <th>Template</th>
+                        <th>Port</th>
+                        <th>Start Time</th>
+                        <th>Renewals</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for container in containers %}
+                    <tr>
+                        <td class="text-center">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input container-checkbox" 
+                                       id="container-list-{{ container.id }}" data-container-id="{{ container.id }}">
+                                <label class="form-check-label" for="container-list-{{ container.id }}"></label>
+                            </div>
+                        </td>
+                        <td>{{ container.id }}</td>
+                        <td>
+                            <a href="{{ url_for('admin.users_detail', user_id=container.user.id) }}">
+                                {{ container.user.name }}
+                            </a>
+                        </td>
+                        <td>
+                            <img src="{{ url_for('plugins.web_desktop.assets', path='img/' + container.template.icon) }}"
+                                alt="{{ container.template.name }}" width="24" height="24" class="mr-2"
+                                onerror="this.onerror=null;this.src='{{ url_for('plugins.web_desktop.assets', path='img/desktop-icon.svg') }}';">
+                            {{ container.template.name }}
+                        </td>
+                        <td>{{ container.port }}</td>
+                        <td>{{ container.start_time|date }}</td>
+                        <td>{{ container.renew_count }}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ container.user_access }}" target="_blank" class="btn btn-primary">
+                                    <i class="fas fa-external-link-alt"></i> Access
+                                </a>
+                                <button class="btn btn-warning renew-container-btn" data-container-id="{{ container.id }}">
+                                    <i class="fas fa-sync"></i> Renew
+                                </button>
+                                <button class="btn btn-danger destroy-container-btn" data-container-id="{{ container.id }}">
+                                    <i class="fas fa-trash"></i> Destroy
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    
+                    {% if containers|length == 0 %}
+                    <tr>
+                        <td colspan="8" class="text-center">No active containers found.</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+        
+        <!-- Pagination -->
+        {% if pages > 1 %}
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+                <li class="page-item {% if curr_page == 1 %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('web_desktop.admin_containers', page=curr_page-1) }}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                        <span class="sr-only">Previous</span>
+                    </a>
+                </li>
+                
+                {% for page in range(1, pages + 1) %}
+                <li class="page-item {% if page == curr_page %}active{% endif %}">
+                    <a class="page-link" href="{{ url_for('web_desktop.admin_containers', page=page) }}">{{ page }}</a>
+                </li>
+                {% endfor %}
+                
+                <li class="page-item {% if curr_page == pages %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('web_desktop.admin_containers', page=curr_page+1) }}" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                        <span class="sr-only">Next</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Select all containers checkbox
+    const selectAllCheckbox = document.getElementById('select-all-containers');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            const containerCheckboxes = document.querySelectorAll('.container-checkbox');
+            containerCheckboxes.forEach(checkbox => {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
+        });
+    }
+    
+    // Renew container button
+    const renewButtons = document.querySelectorAll('.renew-container-btn');
+    renewButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const containerId = this.getAttribute('data-container-id');
+            if (confirm('Are you sure you want to renew this container?')) {
+                renewContainer(containerId);
+            }
+        });
+    });
+    
+    // Destroy container button
+    const destroyButtons = document.querySelectorAll('.destroy-container-btn');
+    destroyButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const containerId = this.getAttribute('data-container-id');
+            if (confirm('Are you sure you want to destroy this container?')) {
+                destroyContainer(containerId);
+            }
+        });
+    });
+    
+    // Bulk renew button
+    const bulkRenewButton = document.getElementById('containers-renew-button');
+    if (bulkRenewButton) {
+        bulkRenewButton.addEventListener('click', function() {
+            const selectedContainers = getSelectedContainers();
+            if (selectedContainers.length === 0) {
+                alert('Please select at least one container to renew.');
+                return;
+            }
+            
+            if (confirm(`Are you sure you want to renew ${selectedContainers.length} container(s)?`)) {
+                bulkRenewContainers(selectedContainers);
+            }
+        });
+    }
+    
+    // Bulk destroy button
+    const bulkDestroyButton = document.getElementById('containers-destroy-button');
+    if (bulkDestroyButton) {
+        bulkDestroyButton.addEventListener('click', function() {
+            const selectedContainers = getSelectedContainers();
+            if (selectedContainers.length === 0) {
+                alert('Please select at least one container to destroy.');
+                return;
+            }
+            
+            if (confirm(`Are you sure you want to destroy ${selectedContainers.length} container(s)?`)) {
+                bulkDestroyContainers(selectedContainers);
+            }
+        });
+    }
+    
+    // Helper function to get selected containers
+    function getSelectedContainers() {
+        const selectedContainers = [];
+        const containerCheckboxes = document.querySelectorAll('.container-checkbox:checked');
+        containerCheckboxes.forEach(checkbox => {
+            selectedContainers.push(checkbox.getAttribute('data-container-id'));
+        });
+        return selectedContainers;
+    }
+    
+    // Function to renew a container
+    function renewContainer(containerId) {
+        fetch(`/api/v1/plugins/webdesktop/admin/container/${containerId}/renew`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Container renewed successfully!');
+                window.location.reload();
+            } else {
+                alert('Error renewing container: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error renewing container');
+        });
+    }
+    
+    // Function to destroy a container
+    function destroyContainer(containerId) {
+        fetch(`/api/v1/plugins/webdesktop/admin/container/${containerId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Container destroyed successfully!');
+                window.location.reload();
+            } else {
+                alert('Error destroying container: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error destroying container');
+        });
+    }
+    
+    // Function to bulk renew containers
+    function bulkRenewContainers(containerIds) {
+        fetch(`/api/v1/plugins/webdesktop/admin/containers/renew`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ container_ids: containerIds })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Containers renewed successfully!');
+                window.location.reload();
+            } else {
+                alert('Error renewing containers: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error renewing containers');
+        });
+    }
+    
+    // Function to bulk destroy containers
+    function bulkDestroyContainers(containerIds) {
+        fetch(`/api/v1/plugins/webdesktop/admin/containers/destroy`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ container_ids: containerIds })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Containers destroyed successfully!');
+                window.location.reload();
+            } else {
+                alert('Error destroying containers: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error destroying containers');
+        });
+    }
+});
+</script>
+{% endblock %}

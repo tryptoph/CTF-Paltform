@@ -20,6 +20,7 @@ def setup_default_configs():
         'frp_http_domain_suffix': '127.0.0.1.xip.io',
         'frp_direct_port_maximum': '10100',
         'frp_direct_port_minimum': '10000',
+        'domain_hostname': 'localhost',
         'template_http_subdomain': '{{ container.uuid }}',
         'template_chall_flag': '{{ "flag{"+uuid.uuid4()|string+"}" }}',
     }.items():
@@ -64,8 +65,8 @@ use_compression = true
 </style>
 
 <div class="container-center">
-  <a href="http://localhost:{{ container.port }}" target="_blank" class="centered-link">
-    localhost:{{ container.port }}
+  <a href="http://{{ get_config("whale:domain_hostname", "localhost") }}:{{ container.port }}" target="_blank" class="centered-link">
+    {{ get_config("whale:domain_hostname", "localhost") }}:{{ container.port }}
   </a>
 </div>
 ''',

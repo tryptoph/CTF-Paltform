@@ -1,0 +1,210 @@
+{% extends "admin/base.html" %}
+
+{% block stylesheets %}
+<link rel="stylesheet" href="{{ url_for('plugins.web_desktop.assets', path='css/webdesktop.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="jumbotron">
+    <div class="container">
+        <h1>Web Desktop Admin</h1>
+        <p>Manage desktop environments for your CTF platform</p>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Settings Card -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h3><i class="fas fa-cogs mr-2"></i> Global Settings</h3>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('web_desktop.update_settings') }}">
+                <input type="hidden" name="nonce" value="{{ nonce }}">
+
+                <div class="form-group">
+                    <label for="domain"><i class="fas fa-globe mr-2"></i> Domain Hostname</label>
+                    <input type="text" class="form-control" id="domain" name="domain" value="{{ hostname }}">
+                    <small class="form-text text-muted">The hostname that users will use to access desktop environments</small>
+                </div>
+
+                <div class="form-group">
+                    <div class="custom-control custom-switch">
+                        <input type="checkbox" class="custom-control-input" id="https_required" name="https_required" {% if https_required %}checked{% endif %}>
+                        <label class="custom-control-label" for="https_required">Require HTTPS</label>
+                    </div>
+                    <small class="form-text text-muted">Desktop environments will be accessed via HTTPS for security</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="docker_timeout"><i class="fas fa-clock mr-2"></i> Container Timeout (seconds)</label>
+                    <input type="number" class="form-control" id="docker_timeout" name="docker_timeout" value="{{ config.get('web_desktop:docker_timeout', 3600) }}">
+                    <small class="form-text text-muted">How long containers will run before expiring</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="docker_max_renew_count"><i class="fas fa-sync mr-2"></i> Maximum Renewal Count</label>
+                    <input type="number" class="form-control" id="docker_max_renew_count" name="docker_max_renew_count" value="{{ config.get('web_desktop:docker_max_renew_count', 5) }}">
+                    <small class="form-text text-muted">Maximum number of times a container can be renewed</small>
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save mr-2"></i> Save Settings
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Templates Card -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h3><i class="fas fa-desktop mr-2"></i> Desktop Templates</h3>
+        </div>
+        <div class="card-body">
+            <button class="btn btn-success mb-3" data-toggle="modal" data-target="#addTemplateModal">
+                <i class="fas fa-plus-circle mr-2"></i> Add Template
+            </button>
+
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Docker Image</th>
+                            <th>Port</th>
+                            <th>Resources</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for template in templates %}
+                        <tr>
+                            <td>
+                                <img src="{{ url_for('plugins.web_desktop.assets', path='img/' + template.icon) }}"
+                                     alt="{{ template.name }}" width="24" height="24" class="mr-2"
+                                     onerror="this.onerror=null;this.src='{{ url_for('plugins.web_desktop.assets', path='img/desktop-icon.svg') }}';">
+                                {{ template.name }}
+                                {% if template.recommended %}
+                                <span class="badge badge-success">Recommended</span>
+                                {% endif %}
+                            </td>
+                            <td><code>{{ template.docker_image }}</code></td>
+                            <td>{{ template.desktop_port }}</td>
+                            <td>
+                                <i class="fas fa-microchip mr-1"></i> {{ template.cpu_limit }} CPU<br>
+                                <i class="fas fa-memory mr-1"></i> {{ template.memory_limit }}
+                            </td>
+                            <td>
+                                {% if template.is_enabled %}
+                                <span class="badge badge-success">Enabled</span>
+                                {% else %}
+                                <span class="badge badge-danger">Disabled</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <form method="POST" action="{{ url_for('web_desktop.toggle_template', template_id=template.id) }}" class="d-inline">
+                                        <input type="hidden" name="nonce" value="{{ nonce }}">
+                                        <button type="submit" class="btn btn-sm {% if template.is_enabled %}btn-warning{% else %}btn-success{% endif %}" title="{% if template.is_enabled %}Disable{% else %}Enable{% endif %}">
+                                            <i class="fas {% if template.is_enabled %}fa-toggle-off{% else %}fa-toggle-on{% endif %}"></i> {% if template.is_enabled %}Disable{% else %}Enable{% endif %}
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+
+                        {% if templates|length == 0 %}
+                        <tr>
+                            <td colspan="6" class="text-center">No templates found. Add a template to get started.</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Template Modal -->
+<div class="modal fade" id="addTemplateModal" tabindex="-1" role="dialog" aria-labelledby="addTemplateModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addTemplateModalLabel"><i class="fas fa-plus-circle mr-2"></i> Add Desktop Template</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="POST" action="{{ url_for('web_desktop.add_template') }}">
+                <div class="modal-body">
+                    <input type="hidden" name="nonce" value="{{ nonce }}">
+
+                    <div class="form-group">
+                        <label for="name">Template Name</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="docker_image">Docker Image</label>
+                        <input type="text" class="form-control" id="docker_image" name="docker_image" required placeholder="e.g., kasmweb/kali-rolling-desktop:1.14.0">
+                        <small class="form-text text-muted">The Docker image to use for this template (e.g., kasmweb/kali-rolling-desktop:1.14.0)</small>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="memory_limit">Memory Limit</label>
+                                <input type="text" class="form-control" id="memory_limit" name="memory_limit" value="2048m">
+                                <small class="form-text text-muted">Memory limit (e.g., 2048m, 4g)</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="cpu_limit">CPU Limit</label>
+                                <input type="number" class="form-control" id="cpu_limit" name="cpu_limit" value="2.0" step="0.1">
+                                <small class="form-text text-muted">CPU cores (e.g., 1.0, 2.0)</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="desktop_port">Desktop Port</label>
+                                <input type="number" class="form-control" id="desktop_port" name="desktop_port" value="6901">
+                                <small class="form-text text-muted">Port for Kasm: 6901</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="custom-control custom-switch">
+                            <input type="checkbox" class="custom-control-input" id="is_enabled" name="is_enabled" checked>
+                            <label class="custom-control-label" for="is_enabled">Enabled</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="custom-control custom-switch">
+                            <input type="checkbox" class="custom-control-input" id="recommended" name="recommended">
+                            <label class="custom-control-label" for="recommended">Recommended</label>
+                        </div>
+                    </div>
+
+                    <input type="hidden" name="icon" value="desktop-icon.svg">
+                    <input type="hidden" name="display_order" value="0">
+                    <input type="hidden" name="connection_type" value="direct">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Template</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
