@@ -1,10 +1,14 @@
 from CTFd.models import db
 from ..models import DesktopTemplate, DesktopConfig, ChallengeDesktopLink, DesktopContainer
+from .rename_tables import migrate_old_tables
 
 def upgrade():
     """
     Upgrade the database schema for the Web Desktop plugin
     """
+    # First, check for old tables and migrate if needed
+    migrate_old_tables()
+
     # Create tables if they don't exist
     if not db.engine.dialect.has_table(db.engine, "web_desktop_templates"):
         DesktopTemplate.__table__.create(db.engine)

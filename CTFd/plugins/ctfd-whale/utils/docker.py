@@ -46,19 +46,54 @@ class DockerUtils:
             get_config("whale:docker_swarm_nodes", "").split(",")
         )
 
+        # Create user-specific network if it doesn't exist
+        network_name = f'user-{container.user_id}-network'
+        networks = client.networks.list(names=[network_name])
+
+        if not networks:
+            # Create a new network for this user
+            range_prefix = CacheProvider(app=current_app).get_available_network_range()
+            ipam_pool = docker.types.IPAMPool(subnet=range_prefix)
+            ipam_config = docker.types.IPAMConfig(driver='default', pool_configs=[ipam_pool])
+
+            network = client.networks.create(
+                network_name,
+                internal=True,
+                ipam=ipam_config,
+                attachable=True,
+                labels={'prefix': range_prefix, 'user_id': str(container.user_id)},
+                driver="overlay",
+                scope="swarm"
+            )
+        else:
+            network = networks[0]
+
+        # Connect to both the user-specific network and the frp network
+        frp_network = get_config("whale:docker_auto_connect_network", "ctfd_frp-containers")
+
+        # Create the container with network aliases based on container type
         client.services.create(
             image=container.challenge.docker_image,
             name=f'{container.user_id}-{container.uuid}',
-            env={'FLAG': container.flag}, dns_config=docker.types.DNSConfig(nameservers=dns),
-            networks=[get_config("whale:docker_auto_connect_network", "ctfd_frp-containers")],
+            env={'FLAG': container.flag},
+            dns_config=docker.types.DNSConfig(nameservers=dns),
+            networks=[
+                # Connect to FRP network for external access
+                docker.types.NetworkAttachmentConfig(frp_network),
+                # Connect to user-specific network with alias based on container type
+                docker.types.NetworkAttachmentConfig(network_name, aliases=[container.container_type])
+            ],
             resources=docker.types.Resources(
                 mem_limit=DockerUtils.convert_readable_text(
                     container.challenge.memory_limit),
                 cpu_limit=int(container.challenge.cpu_limit * 1e9)
             ),
             labels={
-                'whale_id': f'{container.user_id}-{container.uuid}'
-            },  # for container deletion
+                'whale_id': f'{container.user_id}-{container.uuid}',
+                'user_id': str(container.user_id),
+                'container_type': container.container_type
+            },
+            hostname=container.container_type,  # Set hostname to container type
             constraints=['node.labels.name==' + node],
             endpoint_spec=docker.types.EndpointSpec(mode='dnsrr', ports={})
         )
@@ -130,21 +165,39 @@ class DockerUtils:
     def remove_container(container):
         whale_id = f'{container.user_id}-{container.uuid}'
 
+        # Remove the container service
         for s in DockerUtils.client.services.list(filters={'label': f'whale_id={whale_id}'}):
             s.remove()
 
+        # Check if this is the last container for this user
+        remaining_containers = DockerUtils.client.services.list(filters={'label': f'user_id={container.user_id}'})
+
+        # Handle grouped container networks (from the original code)
         networks = DockerUtils.client.networks.list(names=[whale_id])
         if len(networks) > 0:  # is grouped containers
             auto_containers = get_config("whale:docker_auto_connect_containers", "").split(",")
             redis_util = CacheProvider(app=current_app)
             for network in networks:
-                for container in auto_containers:
+                for container_name in auto_containers:
                     try:
-                        network.disconnect(container, force=True)
+                        network.disconnect(container_name, force=True)
                     except Exception:
                         pass
                 redis_util.add_available_network_range(network.attrs['Labels']['prefix'])
                 network.remove()
+
+        # If no containers remain for this user, remove the user-specific network
+        if len(remaining_containers) == 0:
+            user_network_name = f'user-{container.user_id}-network'
+            user_networks = DockerUtils.client.networks.list(names=[user_network_name])
+
+            if user_networks:
+                redis_util = CacheProvider(app=current_app)
+                for network in user_networks:
+                    # Return the network range to the pool
+                    if 'Labels' in network.attrs and 'prefix' in network.attrs['Labels']:
+                        redis_util.add_available_network_range(network.attrs['Labels']['prefix'])
+                    network.remove()
 
     @staticmethod
     def convert_readable_text(text):

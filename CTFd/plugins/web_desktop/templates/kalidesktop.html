@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block stylesheets %}
+<style>
+.desktop-card {
+    margin-bottom: 20px;
+    border: 1px solid rgba(0,0,0,.125);
+    border-radius: .25rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,.1);
+    background-color: #fff;
+}
+.desktop-card-header {
+    padding: 1rem 1.25rem;
+    background-color: rgba(0,0,0,.03);
+    border-bottom: 1px solid rgba(0,0,0,.125);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.desktop-card-body {
+    padding: 1.5rem;
+}
+.connection-info {
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+.access-button {
+    display: inline-block;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #fff;
+    background-color: #28a745;
+    border-radius: 5px;
+    text-decoration: none;
+    transition: background-color 0.3s;
+    margin-right: 10px;
+}
+.access-button:hover {
+    background-color: #218838;
+    color: #fff;
+    text-decoration: none;
+}
+.expiring-soon {
+    color: #dc3545;
+    font-weight: bold;
+}
+.kali-logo {
+    max-width: 64px;
+    margin-right: 20px;
+}
+.desktop-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+.desktop-header h2 {
+    margin: 0;
+}
+.status-badge {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 20px;
+    color: #fff;
+    font-size: 12px;
+    font-weight: bold;
+}
+.status-badge.active {
+    background-color: #28a745;
+}
+.status-badge.inactive {
+    background-color: #6c757d;
+}
+.template-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+.template-card .card-body {
+    flex: 1;
+}
+.template-card .card-footer {
+    background-color: transparent;
+    border-top: none;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="jumbotron">
+    <div class="container">
+        <h1>Kali Linux Desktop</h1>
+        <p>Access a secure Kali Linux desktop environment directly in your browser</p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-12 text-center my-5">
+            <a href="/kalidesktop" class="btn btn-lg btn-primary">
+                <i class="fas fa-desktop"></i> Access Kali Desktop Environment
+            </a>
+            <p class="mt-3 text-muted">Click above to access the Kali Linux desktop environment.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

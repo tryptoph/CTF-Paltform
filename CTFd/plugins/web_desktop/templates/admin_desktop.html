@@ -1,0 +1,241 @@
+{% extends "admin/base.html" %}
+
+{% block stylesheets %}
+<style>
+.desktop-card {
+    margin-bottom: 20px;
+}
+.desktop-form-group {
+    margin-bottom: 15px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="jumbotron">
+    <div class="container">
+        <h1>Web Desktop Administration</h1>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <ul class="nav nav-tabs card-header-tabs" id="desktop-tabs">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="images-tab" data-toggle="tab" href="#images">Desktop Images</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="instances-tab" data-toggle="tab" href="#instances">Active Instances</a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body tab-content">
+                    <!-- Images Tab -->
+                    <div class="tab-pane fade show active" id="images">
+                        <button class="btn btn-primary mb-3" data-toggle="modal" data-target="#add-image-modal">Add New Desktop Image</button>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Name</th>
+                                        <th>Docker Image</th>
+                                        <th>Resources</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% if images %}
+                                    {% for image in images %}
+                                    <tr>
+                                        <td>{{ image.id }}</td>
+                                        <td>{{ image.name }}</td>
+                                        <td>{{ image.docker_image }}</td>
+                                        <td>
+                                            <small>
+                                                Memory: {{ image.memory_limit }}<br>
+                                                CPU: {{ image.cpu_limit }}<br>
+                                                Port: {{ image.desktop_port }}
+                                            </small>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-{{ image.active and 'success' or 'danger' }}">
+                                                {{ image.active and 'Active' or 'Inactive' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-primary edit-image-btn" data-id="{{ image.id }}">Edit</button>
+                                            <button class="btn btn-sm btn-danger delete-image-btn" data-id="{{ image.id }}">Delete</button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="6" class="text-center">No desktop images found. Click "Add New Desktop Image" to create one.</td>
+                                    </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Instances Tab -->
+                    <div class="tab-pane fade" id="instances">
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>User</th>
+                                        <th>Image</th>
+                                        <th>Port</th>
+                                        <th>Start Time</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% if instances %}
+                                    {% for instance in instances %}
+                                    <tr>
+                                        <td>{{ instance.id }}</td>
+                                        <td>{{ instance.user.name }} (ID: {{ instance.user_id }})</td>
+                                        <td>{{ instance.image.name }}</td>
+                                        <td>{{ instance.port }}</td>
+                                        <td>{{ instance.start_time.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                        <td>
+                                            <span class="badge badge-{{ instance.is_expired() and 'danger' or 'success' }}">
+                                                {{ instance.is_expired() and 'Expired' or 'Active' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <form method="POST" action="{{ url_for('web_desktop.admin_renew_instance') }}" style="display: inline;">
+                                                <input type="hidden" name="instance_id" value="{{ instance.id }}">
+                                                <button type="submit" class="btn btn-sm btn-warning">Renew</button>
+                                            </form>
+                                            <form method="POST" action="{{ url_for('web_desktop.admin_delete_instance') }}" style="display: inline;">
+                                                <input type="hidden" name="instance_id" value="{{ instance.id }}">
+                                                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="7" class="text-center">No active desktop instances found.</td>
+                                    </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Image Modal -->
+<div class="modal fade" id="add-image-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Desktop Image</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="POST" action="{{ url_for('web_desktop.admin_create_image') }}">
+                <div class="modal-body">
+                    <div class="desktop-form-group">
+                        <label for="name">Name</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="desktop-form-group">
+                        <label for="description">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="desktop-form-group">
+                        <label for="docker_image">Docker Image</label>
+                        <input type="text" class="form-control" id="docker_image" name="docker_image" required>
+                        <small class="form-text text-muted">Example: kasmweb/kali-rolling-desktop:1.14.0</small>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="desktop-form-group">
+                                <label for="memory_limit">Memory Limit</label>
+                                <input type="text" class="form-control" id="memory_limit" name="memory_limit" value="512m">
+                                <small class="form-text text-muted">Examples: 512m, 1g, 2g</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="desktop-form-group">
+                                <label for="cpu_limit">CPU Limit</label>
+                                <input type="number" class="form-control" id="cpu_limit" name="cpu_limit" value="1.0" step="0.1" min="0.1">
+                                <small class="form-text text-muted">CPU cores (0.5 = half core)</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="desktop-form-group">
+                                <label for="timeout">Timeout (seconds)</label>
+                                <input type="number" class="form-control" id="timeout" name="timeout" value="3600" min="60">
+                                <small class="form-text text-muted">Instance lifetime (3600 = 1 hour)</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="desktop-form-group">
+                                <label for="desktop_port">Desktop Port</label>
+                                <input type="number" class="form-control" id="desktop_port" name="desktop_port" value="6901">
+                                <small class="form-text text-muted">Kasm uses port 6901</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="desktop-form-group">
+                        <div class="custom-control custom-switch">
+                            <input type="checkbox" class="custom-control-input" id="active" name="active" checked>
+                            <label class="custom-control-label" for="active">Active</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // Tab change event
+        $('#desktop-tabs a').on('click', function(e) {
+            e.preventDefault();
+            $(this).tab('show');
+        });
+        
+        // Delete image button
+        $('.delete-image-btn').on('click', function() {
+            const imageId = $(this).data('id');
+            if (confirm('Are you sure you want to delete this desktop image? This action cannot be undone.')) {
+                // Submit delete request
+                alert('Delete functionality to be implemented');
+            }
+        });
+        
+        // Edit image button
+        $('.edit-image-btn').on('click', function() {
+            const imageId = $(this).data('id');
+            alert('Edit functionality to be implemented');
+        });
+    });
+</script>
+{% endblock %}

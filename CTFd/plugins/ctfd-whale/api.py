@@ -73,7 +73,8 @@ class AdminContainers(Resource):
     @admins_only
     def patch():
         user_id = request.args.get('user_id', -1)
-        result, message = ControlUtil.try_renew_container(user_id=int(user_id))
+        container_type = request.args.get('container_type', 'challenge')
+        result, message = ControlUtil.try_renew_container(user_id=int(user_id), container_type=container_type)
         if not result:
             abort(403, message)
         return {'success': True, 'message': message}
@@ -82,7 +83,8 @@ class AdminContainers(Resource):
     @admins_only
     def delete():
         user_id = request.args.get('user_id')
-        result, message = ControlUtil.try_remove_container(user_id)
+        container_type = request.args.get('container_type', 'challenge')
+        result, message = ControlUtil.try_remove_container(user_id, container_type)
         return {'success': result, 'message': message}
 
 
@@ -94,11 +96,12 @@ class UserContainers(Resource):
     def get():
         user_id = current_user.get_current_user().id
         challenge_id = request.args.get('challenge_id')
-        container = DBContainer.get_current_containers(user_id=user_id)
+        container_type = request.args.get('container_type', 'challenge')
+        container = DBContainer.get_current_containers(user_id=user_id, container_type=container_type)
         if not container:
             return {'success': True, 'data': {}}
         timeout = int(get_config("whale:docker_timeout", "3600"))
-        if int(container.challenge_id) != int(challenge_id):
+        if container_type == 'challenge' and int(container.challenge_id) != int(challenge_id):
             return {
                 'success': False,
                 'message': f'Container started but not from this challenge ({container.challenge_id})'
@@ -119,7 +122,10 @@ class UserContainers(Resource):
     @frequency_limited
     def post():
         user_id = current_user.get_current_user().id
-        ControlUtil.try_remove_container(user_id)
+        container_type = request.args.get('container_type', 'challenge')
+
+        # Remove existing container of the same type
+        ControlUtil.try_remove_container(user_id, container_type)
 
         current_count = DBContainer.get_all_alive_container_count()
         if int(get_config("whale:docker_max_container_count")) <= int(current_count):
@@ -128,7 +134,8 @@ class UserContainers(Resource):
         challenge_id = request.args.get('challenge_id')
         result, message = ControlUtil.try_add_container(
             user_id=user_id,
-            challenge_id=challenge_id
+            challenge_id=challenge_id,
+            container_type=container_type
         )
         if not result:
             abort(403, message)
@@ -140,13 +147,14 @@ class UserContainers(Resource):
     @frequency_limited
     def patch():
         user_id = current_user.get_current_user().id
+        container_type = request.args.get('container_type', 'challenge')
         docker_max_renew_count = int(get_config("whale:docker_max_renew_count", 5))
-        container = DBContainer.get_current_containers(user_id)
+        container = DBContainer.get_current_containers(user_id, container_type)
         if container is None:
             abort(403, 'Instance not found.')
         if container.renew_count >= docker_max_renew_count:
             abort(403, 'Max renewal count exceed.')
-        result, message = ControlUtil.try_renew_container(user_id=user_id)
+        result, message = ControlUtil.try_renew_container(user_id=user_id, container_type=container_type)
         return {'success': result, 'message': message}
 
     @staticmethod
@@ -154,7 +162,8 @@ class UserContainers(Resource):
     @frequency_limited
     def delete():
         user_id = current_user.get_current_user().id
-        result, message = ControlUtil.try_remove_container(user_id)
+        container_type = request.args.get('container_type', 'challenge')
+        result, message = ControlUtil.try_remove_container(user_id, container_type)
         if not result:
             abort(403, message)
         return {'success': True, 'message': message}

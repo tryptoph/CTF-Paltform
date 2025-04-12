@@ -107,13 +107,13 @@ class ControlUtil:
                 db.session.commit()
                 current_app.logger.info(f"[Web Desktop] Created link between challenge and template: {template.name}")
 
-            # Use whale plugin to create container
-            result, message = WhaleControlUtil.try_add_container(user_id, challenge.id)
+            # Use whale plugin to create container with desktop container type
+            result, message = WhaleControlUtil.try_add_container(user_id, challenge.id, container_type="desktop")
             if not result:
                 return False, message
 
             # Get the container that was just created
-            whale_container = WhaleContainer.query.filter_by(user_id=user_id).first()
+            whale_container = WhaleContainer.query.filter_by(user_id=user_id, container_type="desktop").first()
             if not whale_container:
                 return False, 'Container created but not found in database'
 
@@ -162,7 +162,7 @@ class ControlUtil:
             desktop_container = DesktopContainer.query.filter_by(user_id=user_id).first()
 
             # Use whale plugin to remove container
-            result, message = WhaleControlUtil.try_remove_container(user_id)
+            result, message = WhaleControlUtil.try_remove_container(user_id, container_type="desktop")
 
             # If we have a desktop container, remove it too
             if desktop_container:
@@ -196,12 +196,12 @@ class ControlUtil:
             desktop_container = DesktopContainer.query.filter_by(user_id=user_id).first()
 
             # Get the whale container
-            whale_container = WhaleContainer.query.filter_by(user_id=user_id).first()
+            whale_container = WhaleContainer.query.filter_by(user_id=user_id, container_type="desktop").first()
             if not whale_container:
                 return False, 'No container found to renew'
 
             # Use whale plugin to renew container
-            result, message = WhaleControlUtil.try_renew_container(user_id)
+            result, message = WhaleControlUtil.try_renew_container(user_id, container_type="desktop")
 
             # If successful and we have a desktop container, update it too
             if result and desktop_container:
@@ -237,7 +237,7 @@ class ControlUtil:
 
             # If user_id is provided, use it to find the container
             if user_id:
-                whale_container = WhaleContainer.query.filter_by(user_id=user_id).first()
+                whale_container = WhaleContainer.query.filter_by(user_id=user_id, container_type="desktop").first()
             # If container_uuid is provided, use it to find the container
             elif container_uuid:
                 whale_container = WhaleContainer.query.filter_by(uuid=container_uuid).first()

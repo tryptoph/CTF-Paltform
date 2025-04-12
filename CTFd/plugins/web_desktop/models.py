@@ -5,6 +5,21 @@ from datetime import datetime
 from jinja2 import Template
 from CTFd.models import db, Users, Challenges
 from CTFd.utils import get_config
+from sqlalchemy.exc import OperationalError, ProgrammingError
+
+# Function to create all tables
+def create_all():
+    """Create all database tables for the web_desktop plugin"""
+    try:
+        # Create tables if they don't exist
+        DesktopTemplate.__table__.create(db.engine, checkfirst=True)
+        DesktopConfig.__table__.create(db.engine, checkfirst=True)
+        DesktopContainer.__table__.create(db.engine, checkfirst=True)
+        ChallengeDesktopLink.__table__.create(db.engine, checkfirst=True)
+        return True
+    except (OperationalError, ProgrammingError) as e:
+        print(f"Error creating web_desktop tables: {str(e)}")
+        return False
 
 class DesktopTemplate(db.Model):
     __tablename__ = "web_desktop_templates"

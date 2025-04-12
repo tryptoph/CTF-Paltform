@@ -10,17 +10,17 @@ from .docker import DockerUtils
 
 class ControlUtil:
     @staticmethod
-    def try_add_container(user_id, challenge_id):
+    def try_add_container(user_id, challenge_id, container_type="challenge"):
         port = CacheProvider(app=current_app).get_available_port()
         if not port:
             return False, 'No available ports. Please wait for a few minutes.'
-        container = DBContainer.create_container_record(user_id, challenge_id, port)
+        container = DBContainer.create_container_record(user_id, challenge_id, port, container_type)
         DockerUtils.add_container(container)
         return True, 'Container created'
 
     @staticmethod
-    def try_remove_container(user_id):
-        container = DBContainer.get_current_containers(user_id=user_id)
+    def try_remove_container(user_id, container_type="challenge"):
+        container = DBContainer.get_current_containers(user_id=user_id, container_type=container_type)
         if not container:
             return False, 'No such container'
         for _ in range(3):  # configurable? as "onerror_retry_cnt"
@@ -29,15 +29,15 @@ class ControlUtil:
                 if container.port != 0:
                     redis_util = CacheProvider(app=current_app)
                     redis_util.add_available_port(container.port)
-                DBContainer.remove_container_record(user_id)
+                DBContainer.remove_container_record(user_id, container_type)
                 return True, 'Container destroyed'
             except:
                 traceback.print_exc()
         return False, 'Failed when destroying instance, please contact admin!'
 
     @staticmethod
-    def try_renew_container(user_id):
-        container = DBContainer.get_current_containers(user_id)
+    def try_renew_container(user_id, container_type="challenge"):
+        container = DBContainer.get_current_containers(user_id, container_type)
         if not container:
             return False, 'No such container'
         timeout = int(get_config("whale:docker_timeout", "3600"))

@@ -57,18 +57,19 @@ class DBConfig(dict):
 
 class DBContainer:
     @staticmethod
-    def create_container_record(user_id, challenge_id, port=0):
+    def create_container_record(user_id, challenge_id, port=0, container_type="challenge"):
         container = WhaleContainer(
-            user_id=user_id, challenge_id=challenge_id, port=port)
+            user_id=user_id, challenge_id=challenge_id, port=port, container_type=container_type)
         db.session.add(container)
         db.session.commit()
 
         return container
 
     @staticmethod
-    def get_current_containers(user_id):
+    def get_current_containers(user_id, container_type="challenge"):
         q = db.session.query(WhaleContainer)
         q = q.filter(WhaleContainer.user_id == user_id)
+        q = q.filter(WhaleContainer.container_type == container_type)
         return q.first()
 
     @staticmethod
@@ -78,9 +79,10 @@ class DBContainer:
         return q.first()
 
     @staticmethod
-    def remove_container_record(user_id):
+    def remove_container_record(user_id, container_type="challenge"):
         q = db.session.query(WhaleContainer)
         q = q.filter(WhaleContainer.user_id == user_id)
+        q = q.filter(WhaleContainer.container_type == container_type)
         q.delete()
         db.session.commit()
 
@@ -88,51 +90,205 @@ class DBContainer:
     def get_all_expired_container():
         timeout = int(DBConfig.get_config("docker_timeout", "3600"))
 
-        q = db.session.query(WhaleContainer)
-        q = q.filter(
-            WhaleContainer.start_time <
-            datetime.datetime.now() - datetime.timedelta(seconds=timeout)
-        )
-        return q.all()
+        try:
+            # Try using the model with container_type
+            q = db.session.query(WhaleContainer)
+            q = q.filter(
+                WhaleContainer.start_time <
+                datetime.datetime.now() - datetime.timedelta(seconds=timeout)
+            )
+            return q.all()
+        except Exception as e:
+            # If that fails, try a direct SQL query
+            try:
+                from sqlalchemy import text
+                result = db.engine.execute(text(
+                    "SELECT id, user_id, challenge_id, start_time, renew_count, status, uuid, port, flag "
+                    "FROM whale_container "
+                    "WHERE start_time < DATE_SUB(NOW(), INTERVAL :timeout SECOND)"
+                ), {"timeout": timeout})
+
+                # Convert to WhaleContainer objects
+                containers = []
+                for row in result:
+                    container = WhaleContainer(
+                        user_id=row[1],
+                        challenge_id=row[2],
+                        port=row[7]
+                    )
+                    container.id = row[0]
+                    container.start_time = row[3]
+                    container.renew_count = row[4]
+                    container.status = row[5]
+                    container.uuid = row[6]
+                    container.flag = row[8]
+                    # Set default container_type
+                    container.container_type = "challenge"
+                    containers.append(container)
+                return containers
+            except Exception as inner_e:
+                # If all else fails, return an empty list
+                print(f"[CTFd-Whale] Error getting expired containers: {str(e)} -> {str(inner_e)}")
+                return []
 
     @staticmethod
     def get_all_alive_container():
         timeout = int(DBConfig.get_config("docker_timeout", "3600"))
 
-        q = db.session.query(WhaleContainer)
-        q = q.filter(
-            WhaleContainer.start_time >=
-            datetime.datetime.now() - datetime.timedelta(seconds=timeout)
-        )
-        return q.all()
+        try:
+            # Try using the model with container_type
+            q = db.session.query(WhaleContainer)
+            q = q.filter(
+                WhaleContainer.start_time >=
+                datetime.datetime.now() - datetime.timedelta(seconds=timeout)
+            )
+            return q.all()
+        except Exception as e:
+            # If that fails, try a direct SQL query
+            try:
+                from sqlalchemy import text
+                result = db.engine.execute(text(
+                    "SELECT id, user_id, challenge_id, start_time, renew_count, status, uuid, port, flag "
+                    "FROM whale_container "
+                    "WHERE start_time >= DATE_SUB(NOW(), INTERVAL :timeout SECOND)"
+                ), {"timeout": timeout})
+
+                # Convert to WhaleContainer objects
+                containers = []
+                for row in result:
+                    container = WhaleContainer(
+                        user_id=row[1],
+                        challenge_id=row[2],
+                        port=row[7]
+                    )
+                    container.id = row[0]
+                    container.start_time = row[3]
+                    container.renew_count = row[4]
+                    container.status = row[5]
+                    container.uuid = row[6]
+                    container.flag = row[8]
+                    # Set default container_type
+                    container.container_type = "challenge"
+                    containers.append(container)
+                return containers
+            except Exception as inner_e:
+                # If all else fails, return an empty list
+                print(f"[CTFd-Whale] Error getting alive containers: {str(e)} -> {str(inner_e)}")
+                return []
 
     @staticmethod
     def get_all_container():
-        q = db.session.query(WhaleContainer)
-        return q.all()
+        try:
+            # Try using the model with container_type
+            q = db.session.query(WhaleContainer)
+            return q.all()
+        except Exception as e:
+            # If that fails, try a direct SQL query without container_type
+            try:
+                from sqlalchemy import text
+                result = db.engine.execute(text(
+                    "SELECT id, user_id, challenge_id, start_time, renew_count, status, uuid, port, flag "
+                    "FROM whale_container"
+                ))
+                # Convert to WhaleContainer objects
+                containers = []
+                for row in result:
+                    container = WhaleContainer(
+                        user_id=row[1],
+                        challenge_id=row[2],
+                        port=row[7]
+                    )
+                    container.id = row[0]
+                    container.start_time = row[3]
+                    container.renew_count = row[4]
+                    container.status = row[5]
+                    container.uuid = row[6]
+                    container.flag = row[8]
+                    # Set default container_type
+                    container.container_type = "challenge"
+                    containers.append(container)
+                return containers
+            except Exception as inner_e:
+                # If all else fails, return an empty list
+                print(f"[CTFd-Whale] Error getting containers: {str(e)} -> {str(inner_e)}")
+                return []
 
     @staticmethod
     def get_all_alive_container_page(page_start, page_end):
         timeout = int(DBConfig.get_config("docker_timeout", "3600"))
 
-        q = db.session.query(WhaleContainer)
-        q = q.filter(
-            WhaleContainer.start_time >=
-            datetime.datetime.now() - datetime.timedelta(seconds=timeout)
-        )
-        q = q.slice(page_start, page_end)
-        return q.all()
+        try:
+            # Try using the model with container_type
+            q = db.session.query(WhaleContainer)
+            q = q.filter(
+                WhaleContainer.start_time >=
+                datetime.datetime.now() - datetime.timedelta(seconds=timeout)
+            )
+            q = q.slice(page_start, page_end)
+            return q.all()
+        except Exception as e:
+            # If that fails, try a direct SQL query
+            try:
+                from sqlalchemy import text
+                result = db.engine.execute(text(
+                    "SELECT id, user_id, challenge_id, start_time, renew_count, status, uuid, port, flag "
+                    "FROM whale_container "
+                    "WHERE start_time >= DATE_SUB(NOW(), INTERVAL :timeout SECOND) "
+                    "LIMIT :offset, :limit"
+                ), {"timeout": timeout, "offset": page_start, "limit": page_end - page_start})
+
+                # Convert to WhaleContainer objects
+                containers = []
+                for row in result:
+                    container = WhaleContainer(
+                        user_id=row[1],
+                        challenge_id=row[2],
+                        port=row[7]
+                    )
+                    container.id = row[0]
+                    container.start_time = row[3]
+                    container.renew_count = row[4]
+                    container.status = row[5]
+                    container.uuid = row[6]
+                    container.flag = row[8]
+                    # Set default container_type
+                    container.container_type = "challenge"
+                    containers.append(container)
+                return containers
+            except Exception as inner_e:
+                # If all else fails, return an empty list
+                print(f"[CTFd-Whale] Error getting paged containers: {str(e)} -> {str(inner_e)}")
+                return []
 
     @staticmethod
     def get_all_alive_container_count():
         timeout = int(DBConfig.get_config("docker_timeout", "3600"))
 
-        q = db.session.query(WhaleContainer)
-        q = q.filter(
-            WhaleContainer.start_time >=
-            datetime.datetime.now() - datetime.timedelta(seconds=timeout)
-        )
-        return q.count()
+        try:
+            # Try using the model with container_type
+            q = db.session.query(WhaleContainer)
+            q = q.filter(
+                WhaleContainer.start_time >=
+                datetime.datetime.now() - datetime.timedelta(seconds=timeout)
+            )
+            return q.count()
+        except Exception as e:
+            # If that fails, try a direct SQL query
+            try:
+                from sqlalchemy import text
+                result = db.engine.execute(text(
+                    "SELECT COUNT(*) FROM whale_container "
+                    "WHERE start_time >= DATE_SUB(NOW(), INTERVAL :timeout SECOND)"
+                ), {"timeout": timeout})
+
+                # Get the count from the result
+                for row in result:
+                    return row[0]
+                return 0
+            except Exception as inner_e:
+                # If all else fails, return 0
+                print(f"[CTFd-Whale] Error getting container count: {str(e)} -> {str(inner_e)}")
+                return 0
 
 
 class DBRedirectTemplate:

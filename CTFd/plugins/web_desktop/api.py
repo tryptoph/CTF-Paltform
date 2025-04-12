@@ -102,7 +102,7 @@ class ContainerStatus(Resource):
                 return {"success": False, "message": "User not found"}, 404
 
             # Get container
-            container = WhaleContainer.query.filter_by(user_id=user.id).first()
+            container = WhaleContainer.query.filter_by(user_id=user.id, container_type="desktop").first()
             if not container:
                 return {"success": True, "container": None}
 

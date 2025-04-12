@@ -21,6 +21,7 @@ from .utils.docker import DockerUtils
 from .utils.exceptions import WhaleError
 from .utils.setup import setup_default_configs
 from .models import WhaleRedirectTemplate, WhaleConfig
+from .migrations.add_container_type import upgrade as add_container_type
 
 
 def load(app):
@@ -28,6 +29,13 @@ def load(app):
     plugin_name = __name__.split('.')[-1]
     set_config('whale:plugin_name', plugin_name)
     app.db.create_all()
+
+    # Run migration to add container_type field BEFORE any database queries
+    # This must be done first to avoid errors when accessing the model
+    with app.app_context():
+        migration_success = add_container_type()
+        if not migration_success:
+            print("[CTFd-Whale] WARNING: Failed to add container_type column. Some features may not work correctly.")
     if not get_config("whale:setup"):
         if not DBConfig.get_config('setup'):
             setup_default_configs()
@@ -110,9 +118,19 @@ def load(app):
 
     def auto_clean_container():
         with app.app_context():
-            results = DBContainer.get_all_expired_container()
-            for r in results:
-                ControlUtil.try_remove_container(r.user_id)
+            try:
+                results = DBContainer.get_all_expired_container()
+                for r in results:
+                    try:
+                        # Try to use container_type if it exists
+                        container_type = getattr(r, 'container_type', 'challenge')
+                        ControlUtil.try_remove_container(r.user_id, container_type)
+                    except Exception as e:
+                        # Fallback to original behavior
+                        print(f"[CTFd-Whale] Warning: Error in container cleanup: {str(e)}")
+                        ControlUtil.try_remove_container(r.user_id)
+            except Exception as e:
+                print(f"[CTFd-Whale] Warning: Error getting expired containers: {str(e)}")
 
             containers = DBContainer.get_all_alive_container()
 

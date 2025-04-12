@@ -1,0 +1,198 @@
+/* Web Desktop Challenge-inspired styling */
+.desktop-button {
+    box-shadow: 3px 3px 3px grey;
+    border: solid 1px #007bff;
+    background-color: transparent !important;
+    box-shadow: 0px 0px 8px 0px #007bff;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    margin-bottom: 15px;
+    position: relative;
+    overflow: hidden;
+    padding: 15px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.desktop-button:hover {
+    transform: translateY(-5px);
+    box-shadow: 0px 0px 15px 0px #007bff;
+}
+
+.desktop-button p {
+    font-weight: bold;
+    margin-bottom: 5px;
+    font-size: 18px;
+}
+
+.desktop-button span {
+    display: block;
+    margin-top: 5px;
+    font-size: 14px;
+    color: #6c757d;
+}
+
+.desktop-button .badge {
+    margin-right: 5px;
+    margin-bottom: 5px;
+}
+
+.desktop-button .desktop-icon {
+    max-width: 48px;
+    max-height: 48px;
+    margin-right: 10px;
+}
+
+.desktop-button .desktop-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.active-desktop {
+    border: 2px solid #28a745 !important;
+    background-color: rgba(40, 167, 69, 0.1) !important;
+    box-shadow: 0px 0px 8px 0px #28a745 !important;
+}
+
+.corner-button-check {
+    position: absolute !important;
+    top: 5px !important;
+    right: 5px !important;
+    color: #28a745 !important;
+    font-size: 16px !important;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.7) !important;
+}
+
+.desktop-actions {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.desktop-modal {
+    max-width: 1000px;
+    margin: 30px auto;
+}
+
+.desktop-modal .modal-content {
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.desktop-modal .modal-header {
+    background-color: #007bff;
+    color: white;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+.desktop-modal .modal-body {
+    padding: 20px;
+}
+
+.desktop-info {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.access-details {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 20px;
+}
+
+.access-item {
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+}
+
+.access-label {
+    font-weight: 600;
+    min-width: 130px;
+    color: #555;
+    display: flex;
+    align-items: center;
+}
+
+.access-value {
+    font-family: monospace;
+    padding: 6px 10px;
+    background-color: #f1f1f1;
+    border-radius: 4px;
+    display: inline-block;
+    word-break: break-all;
+    flex-grow: 1;
+    border: 1px solid #e0e0e0;
+}
+
+/* Loading and message styling */
+#loading-container .alert {
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+#message-container .alert {
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+#message-container .alert-success {
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+}
+
+#message-container .alert-danger {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+}
+
+#message-container .alert-warning {
+    background-color: #fff3cd;
+    border-color: #ffeeba;
+    color: #856404;
+}
+
+#message-container .alert-info {
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+    color: #0c5460;
+}
+
+/* Category styling */
+.desktop-category {
+    margin-bottom: 30px;
+}
+
+.desktop-category h3 {
+    border-bottom: 2px solid #007bff;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .desktop-button {
+        height: auto;
+    }
+    
+    .access-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .access-label {
+        margin-bottom: 5px;
+    }
+}

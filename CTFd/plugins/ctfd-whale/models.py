@@ -66,6 +66,7 @@ class WhaleContainer(db.Model):
     uuid = db.Column(db.String(256))
     port = db.Column(db.Integer, nullable=True, default=0)
     flag = db.Column(db.String(128), nullable=False)
+    container_type = db.Column(db.String(20), nullable=False, default="challenge")
 
     # Relationships
     user = db.relationship(
@@ -80,13 +81,14 @@ class WhaleContainer(db.Model):
             'whale:template_http_subdomain', '{{ container.uuid }}'
         )).render(container=self)
 
-    def __init__(self, user_id, challenge_id, port):
+    def __init__(self, user_id, challenge_id, port, container_type="challenge"):
         self.user_id = user_id
         self.challenge_id = challenge_id
         self.start_time = datetime.now()
         self.renew_count = 0
         self.uuid = str(uuid.uuid4())
         self.port = port
+        self.container_type = container_type
         self.flag = Template(get_config(
             'whale:template_chall_flag', '{{ "flag{"+uuid.uuid4()|string+"}" }}'
         )).render(container=self, uuid=uuid, random=random, get_config=get_config)

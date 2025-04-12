@@ -1,0 +1,337 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="jumbotron">
+    <div class="container">
+        <h1>Kali Linux Desktop</h1>
+        <p>Access a secure Kali Linux desktop environment directly in your browser</p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <div id="desktop-response">
+                <!-- Messages will be inserted here -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}" role="alert">
+                                {{ message }}
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">×</span>
+                                </button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+            </div>
+            
+            {% if not user %}
+                <div class="alert alert-warning">
+                    <h4><i class="fas fa-exclamation-triangle"></i> Authentication Required</h4>
+                    <p>Please <a href="{{ url_for('auth.login') }}">login</a> to access the Kali Desktop environment.</p>
+                </div>
+            {% elif container %}
+                <div class="card mb-4">
+                    <div class="card-header bg-dark text-white">
+                        <h4>
+                            <i class="fas fa-desktop"></i> {{ challenge.name if challenge else 'Kali Desktop' }} (Active)
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="bg-light p-3 mb-3">
+                                    <h5><i class="fas fa-info-circle"></i> Connection Information</h5>
+                                    <table class="table table-sm">
+                                        <tr>
+                                            <td>URL:</td>
+                                            <td><a href="http://localhost:{{ container.port }}" target="_blank">http://localhost:{{ container.port }}</a></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Username:</td>
+                                            <td><code>{{ username }}</code></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Password:</td>
+                                            <td><code>{{ password }}</code></td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <a href="http://localhost:{{ container.port }}" target="_blank" class="btn btn-success btn-lg">
+                                        <i class="fas fa-external-link-alt"></i> Access Desktop
+                                    </a>
+                                </div>
+                                
+                                <div class="d-flex">
+                                    <div class="btn-group">
+                                        {% if container.renew_count < max_renews %}
+                                        <button class="btn btn-outline-primary" id="renew-btn" 
+                                                onclick="renewContainer()">
+                                            <i class="fas fa-sync-alt"></i> Renew Session
+                                        </button>
+                                        {% endif %}
+                                        
+                                        <button class="btn btn-outline-danger" id="delete-btn" 
+                                                onclick="if(confirm('Are you sure you want to delete this desktop session?')) { deleteContainer(); }">
+                                            <i class="fas fa-trash-alt"></i> Delete Session
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <h5>Session Status</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="session-info">
+                                            <p><i class="fas fa-clock"></i> Started: <strong>{{ container.start_time.strftime('%Y-%m-%d %H:%M:%S') }}</strong></p>
+                                            <p><i class="fas fa-sync-alt"></i> Renewals: <strong>{{ container.renew_count }} / {{ max_renews }}</strong></p>
+                                            <p id="remaining-time-container">
+                                                <i class="fas fa-hourglass-half"></i> Remaining Time: 
+                                                <strong id="remaining-time">Calculating...</strong>
+                                            </p>
+                                        </div>
+                                        <div class="progress mt-3">
+                                            <div id="time-progress" class="progress-bar" role="progressbar" style="width: 100%;" 
+                                                aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">100%</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="alert alert-info">
+                                    <h5><i class="fas fa-lightbulb"></i> Tips</h5>
+                                    <ul class="mb-0">
+                                        <li>This is a full Kali Linux desktop with pre-installed security tools.</li>
+                                        <li>The session will expire after the time shown above.</li>
+                                        <li>Use the "Renew Session" button to extend your time if needed.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="row">
+                    {% if templates|length > 0 %}
+                        {% for template in templates %}
+                        <div class="col-md-4 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header bg-dark text-white">
+                                    <h5 class="mb-0">{{ template.name }}</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p>{{ template.description }}</p>
+                                    <div class="small text-muted mb-3">
+                                        <div><strong>Resources:</strong></div>
+                                        <div>Memory: {{ template.memory_limit }}</div>
+                                        <div>CPU: {{ template.cpu_limit }} cores</div>
+                                    </div>
+                                </div>
+                                <div class="card-footer text-center">
+                                    <button class="btn btn-success" onclick="launchDesktop({{ template.id }})">
+                                        <i class="fas fa-rocket"></i> Launch Desktop
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="col-12">
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle"></i> No desktop templates are currently available. Please contact an administrator.
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-info-circle"></i> 
+                    Desktop sessions will be available for {{ get_config("whale:docker_timeout", 3600)|int // 60 }} minutes after launch.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function showResponse(message, type = 'danger') {
+    $('#desktop-response').html(
+        `<div class="alert alert-${type} alert-dismissable" role="alert">
+            <span>${message}</span>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">×</span>
+            </button>
+        </div>`
+    );
+    
+    window.scrollTo(0, 0);
+}
+
+function launchDesktop(templateId) {
+    const buttons = document.querySelectorAll('.card-footer button');
+    buttons.forEach(btn => {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting...';
+    });
+    
+    showResponse('Starting container. Please wait...', 'info');
+    
+    fetch(`/api/v1/plugins/webdesktop/launch/${templateId}`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showResponse('Desktop is starting. The page will refresh in a few seconds...', 'success');
+            setTimeout(() => {
+                window.location.reload();
+            }, 5000);
+        } else {
+            showResponse(data.message);
+            // Re-enable buttons
+            buttons.forEach(btn => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-rocket"></i> Launch Desktop';
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showResponse('An unexpected error occurred');
+        // Re-enable buttons
+        buttons.forEach(btn => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-rocket"></i> Launch Desktop';
+        });
+    });
+}
+
+function renewContainer() {
+    $('#renew-btn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Renewing...');
+    
+    fetch('/api/v1/plugins/ctfd-whale/container', {
+        method: 'PATCH',
+        credentials: 'same-origin',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            showResponse(data.message);
+            $('#renew-btn').prop('disabled', false).html('<i class="fas fa-sync-alt"></i> Renew Session');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showResponse('An unexpected error occurred');
+        $('#renew-btn').prop('disabled', false).html('<i class="fas fa-sync-alt"></i> Renew Session');
+    });
+}
+
+function deleteContainer() {
+    $('#delete-btn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Deleting...');
+    
+    fetch('/api/v1/plugins/ctfd-whale/container', {
+        method: 'DELETE',
+        credentials: 'same-origin',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            showResponse(data.message);
+            $('#delete-btn').prop('disabled', false).html('<i class="fas fa-trash-alt"></i> Delete Session');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showResponse('An unexpected error occurred');
+        $('#delete-btn').prop('disabled', false).html('<i class="fas fa-trash-alt"></i> Delete Session');
+    });
+}
+
+{% if container %}
+    // Get timeout from whale plugin
+    const timeout = {{ get_config("whale:docker_timeout", 3600) }};
+    
+    // Calculate remaining time
+    const startTime = new Date("{{ container.start_time.isoformat() }}");
+    const currentTime = new Date();
+    const elapsedSeconds = Math.floor((currentTime - startTime) / 1000);
+    let remainingSeconds = Math.max(0, timeout - elapsedSeconds);
+    
+    // Format time function
+    function formatTime(seconds) {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+        
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    
+    // Update progress bar
+    function updateProgressBar(seconds) {
+        const percentage = Math.floor((seconds / timeout) * 100);
+        $('#time-progress').css('width', `${percentage}%`).attr('aria-valuenow', percentage).text(`${percentage}%`);
+        
+        // Change color based on time remaining
+        if (percentage < 20) {
+            $('#time-progress').removeClass('bg-success bg-warning').addClass('bg-danger');
+        } else if (percentage < 50) {
+            $('#time-progress').removeClass('bg-success bg-danger').addClass('bg-warning');
+        } else {
+            $('#time-progress').removeClass('bg-warning bg-danger').addClass('bg-success');
+        }
+        
+        // Mark as expiring soon if less than 5 minutes
+        if (seconds < 300) {
+            $('#remaining-time').css('color', '#dc3545').css('font-weight', 'bold');
+        }
+    }
+    
+    // Update the timer immediately
+    document.getElementById('remaining-time').textContent = formatTime(remainingSeconds);
+    updateProgressBar(remainingSeconds);
+    
+    // Set a timer to update every second
+    const timer = setInterval(() => {
+        remainingSeconds--;
+        
+        if (remainingSeconds <= 0) {
+            clearInterval(timer);
+            document.getElementById('remaining-time').textContent = 'Expired';
+            $('#time-progress').css('width', '0%').attr('aria-valuenow', 0).text('0%');
+            $('#time-progress').removeClass('bg-success bg-warning').addClass('bg-danger');
+            
+            // Show message
+            showResponse('Your desktop session has expired', 'warning');
+            
+            // Reload the page after a short delay to reflect the expired state
+            setTimeout(() => window.location.reload(), 3000);
+        } else {
+            document.getElementById('remaining-time').textContent = formatTime(remainingSeconds);
+            updateProgressBar(remainingSeconds);
+        }
+    }, 1000);
+{% endif %}
+</script>
+{% endblock %}

@@ -21,11 +21,27 @@ class CacheProvider:
     def init_port_sets(self):
         self.clear()
 
-        containers = DBContainer.get_all_container()
-        used_port_list = []
-        for container in containers:
-            if container.port != 0:
-                used_port_list.append(container.port)
+        # Get used ports directly from database to avoid model issues
+        try:
+            from sqlalchemy import text
+            from CTFd.models import db
+            # Use raw SQL to get ports to avoid model issues with new columns
+            result = db.engine.execute(text("SELECT port FROM whale_container WHERE port != 0"))
+            used_port_list = [row[0] for row in result]
+        except Exception as e:
+            # Fallback to using the model if direct SQL fails
+            try:
+                containers = DBContainer.get_all_container()
+                used_port_list = []
+                for container in containers:
+                    if container.port != 0:
+                        used_port_list.append(container.port)
+            except Exception as e:
+                # If all else fails, assume no ports are in use
+                used_port_list = []
+                print(f"[CTFd-Whale] Warning: Could not get used ports: {str(e)}")
+
+        # Add available ports
         for port in range(int(get_config("whale:frp_direct_port_minimum", 29000)),
                           int(get_config("whale:frp_direct_port_maximum", 28000)) + 1):
             if port not in used_port_list:

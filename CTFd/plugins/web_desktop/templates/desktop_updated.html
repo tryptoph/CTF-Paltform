@@ -1,0 +1,689 @@
+{% extends "base.html" %}
+
+{% block stylesheets %}
+<style>
+.desktop-card {
+    margin-bottom: 20px;
+    border: 1px solid rgba(0,0,0,.125);
+    border-radius: .25rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,.1);
+    background-color: #fff;
+}
+.desktop-card-header {
+    padding: 1rem 1.25rem;
+    background-color: rgba(0,0,0,.03);
+    border-bottom: 1px solid rgba(0,0,0,.125);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.desktop-card-body {
+    padding: 1.5rem;
+}
+.connection-info {
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+.access-button {
+    display: inline-block;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #fff;
+    background-color: #28a745;
+    border-radius: 5px;
+    text-decoration: none;
+    transition: background-color 0.3s;
+    margin-right: 10px;
+}
+.access-button:hover {
+    background-color: #218838;
+    color: #fff;
+    text-decoration: none;
+}
+.expiring-soon {
+    color: #dc3545;
+    font-weight: bold;
+}
+.kali-logo {
+    max-width: 64px;
+    margin-right: 20px;
+}
+.desktop-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+.desktop-header h2 {
+    margin: 0;
+}
+.status-badge {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 20px;
+    color: #fff;
+    font-size: 12px;
+    font-weight: bold;
+}
+.status-badge.active {
+    background-color: #28a745;
+}
+.status-badge.inactive {
+    background-color: #6c757d;
+}
+.template-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s;
+}
+.template-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+.template-card .card-body {
+    flex: 1;
+}
+.template-card .card-footer {
+    background-color: transparent;
+    border-top: none;
+}
+.badge-recommended {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    z-index: 10;
+    padding: 5px 10px;
+    background-color: #007bff;
+    color: white;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+.template-filter {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="jumbotron">
+    <div class="container">
+        <h1>Kali Linux Desktop</h1>
+        <p>Access a secure Kali Linux desktop environment directly in your browser</p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <div id="desktop-response">
+                <!-- Messages will be inserted here -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}" role="alert">
+                                {{ message }}
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">×</span>
+                                </button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+            </div>
+            
+            {% if not user %}
+                <div class="alert alert-warning">
+                    <h4><i class="fas fa-exclamation-triangle"></i> Authentication Required</h4>
+                    <p>Please <a href="{{ url_for('auth.login') }}">login</a> to access the Kali Desktop environment.</p>
+                </div>
+            {% elif container %}
+                <div class="desktop-card">
+                    <div class="desktop-card-header">
+                        <div class="desktop-header">
+                            <img src="{{ url_for('plugins.web_desktop.assets', path=challenge.icon|default('kali-logo.svg')) }}" alt="{{ challenge.name }}" class="kali-logo">
+                            <div>
+                                <h2>{{ challenge.name if challenge else 'Kali Desktop' }}</h2>
+                                <div><span class="status-badge active">Active</span></div>
+                            </div>
+                        </div>
+                        <div>
+                            <a href="http://localhost:{{ container.port }}" target="_blank" class="btn btn-success btn-lg">
+                                <i class="fas fa-external-link-alt"></i> Access Desktop
+                            </a>
+                        </div>
+                    </div>
+                    <div class="desktop-card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="connection-info">
+                                    <h5><i class="fas fa-info-circle"></i> Connection Information</h5>
+                                    <table class="table table-sm">
+                                        <tr>
+                                            <td>URL:</td>
+                                            <td><a href="http://localhost:{{ container.port }}" target="_blank">http://localhost:{{ container.port }}</a></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Username:</td>
+                                            <td><code>{{ username }}</code></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Password:</td>
+                                            <td><code>{{ password }}</code></td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                
+                                <div class="d-flex mb-3">
+                                    <div class="btn-group">
+                                        {% if container.renew_count < max_renews %}
+                                        <button class="btn btn-outline-primary" id="renew-btn" 
+                                                onclick="renewContainer()">
+                                            <i class="fas fa-sync-alt"></i> Renew Session
+                                        </button>
+                                        {% endif %}
+                                        
+                                        <button class="btn btn-outline-danger" id="delete-btn" 
+                                                onclick="if(confirm('Are you sure you want to delete this desktop session?')) { deleteContainer(); }">
+                                            <i class="fas fa-trash-alt"></i> Delete Session
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5>Session Status</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="session-info">
+                                            <p><i class="fas fa-clock"></i> Started: <strong>{{ container.start_time.strftime('%Y-%m-%d %H:%M:%S') }}</strong></p>
+                                            <p><i class="fas fa-sync-alt"></i> Renewals: <strong>{{ container.renew_count }} / {{ max_renews }}</strong></p>
+                                            <p id="remaining-time-container">
+                                                <i class="fas fa-hourglass-half"></i> Remaining Time: 
+                                                <strong id="remaining-time">Calculating...</strong>
+                                            </p>
+                                        </div>
+                                        <div class="progress mt-3">
+                                            <div id="time-progress" class="progress-bar" role="progressbar" style="width: 100%;" 
+                                                aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">100%</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-3">
+                                    <div class="alert alert-info">
+                                        <h5><i class="fas fa-lightbulb"></i> Tips</h5>
+                                        <ul class="mb-0">
+                                            <li>This is a full Kali Linux desktop with pre-installed security tools.</li>
+                                            <li>The session will expire after the time shown above.</li>
+                                            <li>Use the "Renew Session" button to extend your time if needed.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="template-filter">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h4><i class="fas fa-desktop"></i> Available Desktop Environments</h4>
+                            <p class="text-muted mb-0">Select a desktop environment to launch</p>
+                        </div>
+                        <div class="col-md-6 text-right">
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-secondary active" id="view-all">All</button>
+                                <button type="button" class="btn btn-outline-primary" id="view-recommended">Recommended</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row" id="template-container">
+                    {% if templates|length > 0 %}
+                        {# First sort by recommended status (true first), then by display_order #}
+                        {% for template in templates|sort(attribute='recommended', reverse=true)|sort(attribute='display_order') %}
+                        <div class="col-md-4 mb-4 template-item {% if template.recommended %}recommended{% endif %}">
+                            <div class="card template-card {% if template.recommended %}border-primary{% endif %}">
+                                {% if template.recommended %}
+                                <div class="badge-recommended">
+                                    <i class="fas fa-star"></i> Recommended
+                                </div>
+                                {% endif %}
+                                <div class="card-header {% if template.recommended %}bg-primary{% else %}bg-dark{% endif %} text-white d-flex align-items-center">
+                                    <img src="{{ url_for('plugins.web_desktop.assets', path=template.icon) }}" alt="{{ template.name }}" class="mr-2" style="width: 30px;">
+                                    <h5 class="mb-0">{{ template.name }}</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p>{{ template.description }}</p>
+                                    <div class="small text-muted">
+                                        <div><strong>Resources:</strong></div>
+                                        <div><i class="fas fa-memory"></i> Memory: {{ template.memory_limit }}</div>
+                                        <div><i class="fas fa-microchip"></i> CPU: {{ template.cpu_limit }} cores</div>
+                                    </div>
+                                    
+                                    <!-- Features section -->
+                                    <div class="mt-3">
+                                        <h6 class="border-bottom pb-2">Features</h6>
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <div class="mb-1"><i class="fas fa-check-circle text-success"></i> Full Desktop</div>
+                                                <div class="mb-1"><i class="fas fa-check-circle text-success"></i> Browser</div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="mb-1"><i class="fas fa-check-circle text-success"></i> Terminal</div>
+                                                <div class="mb-1"><i class="fas fa-check-circle text-success"></i> Tools</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <button class="btn btn-success btn-block launch-btn" data-template-id="{{ template.id }}">
+                                        <i class="fas fa-rocket"></i> Launch Desktop
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="col-12">
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle"></i> No desktop templates are currently available. Please contact an administrator.
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-info-circle"></i> 
+                    Desktop sessions will be available for {{ get_config("whale:docker_timeout", 3600)|int // 60 }} minutes after launch.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+/* Loading animation for Desktop Launch */
+.circle-loader {
+    margin: 0 auto;
+    border: 3px solid rgba(0, 0, 0, 0.2);
+    border-left-color: #5cb85c;
+    animation: loader-spin 1.2s infinite linear;
+    position: relative;
+    display: inline-block;
+    vertical-align: top;
+    border-radius: 50%;
+    width: 7em;
+    height: 7em;
+}
+
+.load-complete {
+    -webkit-animation: none;
+    animation: none;
+    border-color: #5cb85c;
+    transition: border 500ms ease-out;
+}
+
+.checkmark {
+    display: none;
+}
+
+.checkmark.draw:after {
+    animation-duration: 800ms;
+    animation-timing-function: ease;
+    animation-name: checkmark;
+    transform: scaleX(-1) rotate(135deg);
+}
+
+.checkmark:after {
+    opacity: 1;
+    height: 3.5em;
+    width: 1.75em;
+    transform-origin: left top;
+    border-right: 3px solid #5cb85c;
+    border-top: 3px solid #5cb85c;
+    content: '';
+    left: 2.25em;
+    top: 3.75em;
+    position: absolute;
+}
+
+@keyframes loader-spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes checkmark {
+    0% {
+        height: 0;
+        width: 0;
+        opacity: 1;
+    }
+    20% {
+        height: 0;
+        width: 1.75em;
+        opacity: 1;
+    }
+    40% {
+        height: 3.5em;
+        width: 1.75em;
+        opacity: 1;
+    }
+    100% {
+        height: 3.5em;
+        width: 1.75em;
+        opacity: 1;
+    }
+}
+</style>
+<script>
+// Attach event listeners when document is ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Add click handlers to all launch buttons
+    document.querySelectorAll('.launch-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const templateId = this.getAttribute('data-template-id');
+            launchDesktop(templateId);
+        });
+    });
+    
+    // Template filtering
+    const viewAllBtn = document.getElementById('view-all');
+    const viewRecommendedBtn = document.getElementById('view-recommended');
+    const templateItems = document.querySelectorAll('.template-item');
+    
+    if (viewAllBtn && viewRecommendedBtn) {
+        viewAllBtn.addEventListener('click', function() {
+            viewAllBtn.classList.add('active');
+            viewRecommendedBtn.classList.remove('active');
+            templateItems.forEach(item => {
+                item.style.display = 'block';
+            });
+        });
+        
+        viewRecommendedBtn.addEventListener('click', function() {
+            viewRecommendedBtn.classList.add('active');
+            viewAllBtn.classList.remove('active');
+            templateItems.forEach(item => {
+                if (item.classList.contains('recommended')) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+            
+            // If no recommended templates are found, show a message
+            const visibleCount = document.querySelectorAll('.template-item.recommended').length;
+            const noRecommendedMsg = document.getElementById('no-recommended-msg');
+            
+            if (visibleCount === 0) {
+                if (!noRecommendedMsg) {
+                    const msg = document.createElement('div');
+                    msg.id = 'no-recommended-msg';
+                    msg.className = 'col-12';
+                    msg.innerHTML = `
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> 
+                            No recommended templates found. Showing all available templates.
+                        </div>
+                    `;
+                    document.getElementById('template-container').appendChild(msg);
+                }
+                // Show all templates again
+                templateItems.forEach(item => {
+                    item.style.display = 'block';
+                });
+            } else if (noRecommendedMsg) {
+                noRecommendedMsg.remove();
+            }
+        });
+    }
+});
+
+function showResponse(message, type = 'danger') {
+    $('#desktop-response').html(
+        `<div class="alert alert-${type} alert-dismissable" role="alert">
+            <span>${message}</span>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">×</span>
+            </button>
+        </div>`
+    );
+    
+    // Scroll to top to show message
+    window.scrollTo(0, 0);
+}
+
+function launchDesktop(templateId) {
+    // Find and disable all launch buttons
+    const buttons = document.querySelectorAll('.launch-btn');
+    buttons.forEach(btn => {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting...';
+    });
+    
+    // Create loading overlay
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.id = 'loading-overlay';
+    loadingOverlay.style = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999; display:flex; justify-content:center; align-items:center;';
+    
+    // Create loading content
+    const loadingContent = document.createElement('div');
+    loadingContent.style = 'background:white; padding:20px; border-radius:10px; text-align:center; max-width:500px;';
+    loadingContent.innerHTML = `
+        <h4><i class="fas fa-server"></i> Launching Desktop Environment</h4>
+        <div class="progress mt-3 mb-3">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" 
+                 style="width: 100%"></div>
+        </div>
+        <p id="launch-status">Initializing container...</p>
+        <small class="text-muted">This may take a moment. Please don't refresh the page.</small>
+    `;
+    
+    loadingOverlay.appendChild(loadingContent);
+    document.body.appendChild(loadingOverlay);
+    
+    // Update status function
+    const updateStatus = (message) => {
+        document.getElementById('launch-status').innerText = message;
+    };
+    
+    // Animation sequence
+    setTimeout(() => updateStatus('Creating container...'), 1000);
+    setTimeout(() => updateStatus('Configuring network...'), 3000);
+    setTimeout(() => updateStatus('Starting desktop services...'), 5000);
+    
+    // Call the API to launch a desktop
+    fetch(`/api/v1/plugins/webdesktop/launch/${templateId}`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            updateStatus('Desktop is ready! Redirecting...');
+            
+            // Show success animation
+            loadingContent.innerHTML = `
+                <div class="text-center">
+                    <div class="circle-loader">
+                        <div class="checkmark draw"></div>
+                    </div>
+                    <h4 class="mt-3">Desktop Ready!</h4>
+                    <p>Redirecting to your desktop environment...</p>
+                </div>
+            `;
+            
+            // Add the success animation class
+            setTimeout(() => {
+                document.querySelector('.circle-loader').classList.add('load-complete');
+                document.querySelector('.checkmark').style.display = 'block';
+            }, 500);
+            
+            setTimeout(() => {
+                window.location.reload();
+            }, 2500);
+        } else {
+            // Remove loading overlay
+            document.body.removeChild(loadingOverlay);
+            
+            showResponse(data.message);
+            // Re-enable buttons
+            buttons.forEach(btn => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-rocket"></i> Launch Desktop';
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        
+        // Remove loading overlay
+        document.body.removeChild(loadingOverlay);
+        
+        showResponse('An unexpected error occurred');
+        // Re-enable buttons
+        buttons.forEach(btn => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-rocket"></i> Launch Desktop';
+        });
+    });
+}
+
+function renewContainer() {
+    $('#renew-btn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Renewing...');
+    
+    fetch('/api/v1/plugins/ctfd-whale/container', {
+        method: 'PATCH',
+        credentials: 'same-origin',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            showResponse(data.message);
+            $('#renew-btn').prop('disabled', false).html('<i class="fas fa-sync-alt"></i> Renew Session');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showResponse('An unexpected error occurred');
+        $('#renew-btn').prop('disabled', false).html('<i class="fas fa-sync-alt"></i> Renew Session');
+    });
+}
+
+function deleteContainer() {
+    $('#delete-btn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Deleting...');
+    
+    fetch('/api/v1/plugins/ctfd-whale/container', {
+        method: 'DELETE',
+        credentials: 'same-origin',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            showResponse(data.message);
+            $('#delete-btn').prop('disabled', false).html('<i class="fas fa-trash-alt"></i> Delete Session');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showResponse('An unexpected error occurred');
+        $('#delete-btn').prop('disabled', false).html('<i class="fas fa-trash-alt"></i> Delete Session');
+    });
+}
+
+{% if container %}
+    // Get timeout from whale plugin
+    const timeout = {{ get_config("whale:docker_timeout", 3600) }};
+    
+    // Calculate remaining time
+    const startTime = new Date("{{ container.start_time.isoformat() }}");
+    const currentTime = new Date();
+    const elapsedSeconds = Math.floor((currentTime - startTime) / 1000);
+    let remainingSeconds = Math.max(0, timeout - elapsedSeconds);
+    
+    // Format time function
+    function formatTime(seconds) {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+        
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    
+    // Update progress bar
+    function updateProgressBar(seconds) {
+        const percentage = Math.floor((seconds / timeout) * 100);
+        $('#time-progress').css('width', `${percentage}%`).attr('aria-valuenow', percentage).text(`${percentage}%`);
+        
+        // Change color based on time remaining
+        if (percentage < 20) {
+            $('#time-progress').removeClass('bg-success bg-warning').addClass('bg-danger');
+        } else if (percentage < 50) {
+            $('#time-progress').removeClass('bg-success bg-danger').addClass('bg-warning');
+        } else {
+            $('#time-progress').removeClass('bg-warning bg-danger').addClass('bg-success');
+        }
+        
+        // Mark as expiring soon if less than 5 minutes
+        if (seconds < 300) {
+            $('#remaining-time').addClass('expiring-soon');
+        }
+    }
+    
+    // Update the timer immediately
+    document.getElementById('remaining-time').textContent = formatTime(remainingSeconds);
+    updateProgressBar(remainingSeconds);
+    
+    // Set a timer to update every second
+    const timer = setInterval(() => {
+        remainingSeconds--;
+        
+        if (remainingSeconds <= 0) {
+            clearInterval(timer);
+            document.getElementById('remaining-time').textContent = 'Expired';
+            $('#time-progress').css('width', '0%').attr('aria-valuenow', 0).text('0%');
+            $('#time-progress').removeClass('bg-success bg-warning').addClass('bg-danger');
+            
+            // Show message
+            showResponse('Your desktop session has expired', 'warning');
+            
+            // Reload the page after a short delay to reflect the expired state
+            setTimeout(() => window.location.reload(), 3000);
+        } else {
+            document.getElementById('remaining-time').textContent = formatTime(remainingSeconds);
+            updateProgressBar(remainingSeconds);
+        }
+    }, 1000);
+{% endif %}
+</script>
+{% endblock %}

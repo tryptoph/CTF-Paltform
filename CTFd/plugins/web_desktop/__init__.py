@@ -42,7 +42,7 @@ except Exception as e:
     WhaleConfig = None
     WhaleControlUtil = None
 
-from .models import DesktopTemplate, DesktopConfig, DesktopContainer, ChallengeDesktopLink
+from .models import DesktopTemplate, DesktopConfig, DesktopContainer, ChallengeDesktopLink, create_all
 from .utils.migrations import upgrade as db_upgrade
 from .api import desktop_namespace
 
@@ -82,9 +82,24 @@ def load(app):
         url_prefix="/plugins/web_desktop"
     )
 
-    # Upgrade database
+    # Create database tables and upgrade database
     with app.app_context():
-        db_upgrade()
+        # Create all tables defined in models.py using our custom function
+        try:
+            success = create_all()
+            if success:
+                current_app.logger.info("[Web Desktop] Created database tables")
+            else:
+                current_app.logger.warning("[Web Desktop] Some tables may not have been created properly")
+        except Exception as e:
+            current_app.logger.error(f"[Web Desktop] Error creating database tables: {str(e)}")
+
+        # Run migrations
+        try:
+            db_upgrade()
+            current_app.logger.info("[Web Desktop] Database migrations completed")
+        except Exception as e:
+            current_app.logger.error(f"[Web Desktop] Error running database migrations: {str(e)}")
 
     # Set default configs if not already set
     if not get_config("web_desktop:domain"):
@@ -119,7 +134,7 @@ def load(app):
             template_info = None
 
             if WhaleContainer:
-                whale_container = WhaleContainer.query.filter_by(user_id=user.id).first()
+                whale_container = WhaleContainer.query.filter_by(user_id=user.id, container_type="desktop").first()
 
                 # If we have a container, try to get its template info
                 if whale_container and whale_container.challenge_id:
@@ -258,11 +273,54 @@ def load(app):
             curr_page = 1
 
             if WhaleContainer:
-                # Get all containers
-                count = WhaleContainer.query.count()
-                containers = WhaleContainer.query.order_by(WhaleContainer.id.desc()).slice(page_start, page_start + results_per_page).all()
-                pages = (count // results_per_page) + (1 if count % results_per_page > 0 else 0)
-                curr_page = min(page, pages) if pages > 0 else 1
+                try:
+                    # Get desktop containers only
+                    query = WhaleContainer.query
+
+                    # Try to filter by container_type if the column exists
+                    try:
+                        query = query.filter(WhaleContainer.container_type == "desktop")
+                    except Exception as filter_error:
+                        current_app.logger.warning(f"[Web Desktop] Could not filter by container_type: {str(filter_error)}")
+
+                    # Count and paginate
+                    count = query.count()
+                    whale_containers = query.order_by(WhaleContainer.id.desc()).slice(page_start, page_start + results_per_page).all()
+
+                    # Process containers for display
+                    processed_containers = []
+                    for container in whale_containers:
+                        # Create a dictionary with container data
+                        container_data = {
+                            'id': container.id,
+                            'user_id': container.user_id,
+                            'user': container.user,
+                            'start_time': container.start_time,
+                            'port': container.port,
+                            'uuid': container.uuid,
+                            'status': 'Running',  # Default status
+                            'template_name': 'Unknown'  # Default template name
+                        }
+
+                        # Try to find a matching template
+                        try:
+                            if container.challenge_id:
+                                # Look for a desktop template linked to this challenge
+                                link = ChallengeDesktopLink.query.filter_by(challenge_id=container.challenge_id).first()
+                                if link and link.template:
+                                    container_data['template'] = link.template
+                                    container_data['template_name'] = link.template.name
+                        except Exception as template_error:
+                            current_app.logger.warning(f"[Web Desktop] Error finding template: {str(template_error)}")
+
+                        processed_containers.append(container_data)
+
+                    containers = processed_containers
+                    pages = (count // results_per_page) + (1 if count % results_per_page > 0 else 0)
+                    curr_page = min(page, pages) if pages > 0 else 1
+                except Exception as container_error:
+                    current_app.logger.error(f"[Web Desktop] Error processing containers: {str(container_error)}")
+                    # Continue with empty containers list
 
             # Generate nonce
             nonce = generate_nonce()
