@@ -27,13 +27,18 @@ def migrate_desktop_template():
         if 'desktop_template' in tables:
             current_app.logger.info("[Web Desktop] Found old desktop_template table, checking for data to migrate")
 
-            # Check if there's data to migrate
-            result = db.engine.execute("SELECT COUNT(*) FROM desktop_template")
-            count = result.scalar()
+            try:
+                # Check if there's data to migrate
+                result = db.engine.execute("SELECT COUNT(*) FROM desktop_template")
+                count = result.scalar()
 
-            if count > 0:
-                current_app.logger.info(f"[Web Desktop] Found {count} records to migrate from desktop_template")
+                if count > 0:
+                    current_app.logger.info(f"[Web Desktop] Found {count} records to migrate from desktop_template")
+            except Exception as inner_e:
+                current_app.logger.warning(f"[Web Desktop] Could not query desktop_template table: {str(inner_e)}")
+                count = 0
 
+            try:
                 # Rename the old table to avoid future conflicts
                 if db.engine.name == 'sqlite':
                     db.engine.execute("ALTER TABLE desktop_template RENAME TO desktop_template_old")
@@ -43,6 +48,8 @@ def migrate_desktop_template():
                     db.engine.execute("ALTER TABLE desktop_template RENAME TO desktop_template_old")
 
                 current_app.logger.info("[Web Desktop] Renamed old table to desktop_template_old")
+            except Exception as inner_e:
+                current_app.logger.warning(f"[Web Desktop] Could not rename desktop_template table: {str(inner_e)}")
 
             return True
         else:
@@ -50,7 +57,8 @@ def migrate_desktop_template():
             return True
     except Exception as e:
         current_app.logger.error(f"[Web Desktop] Error migrating desktop_template: {str(e)}")
-        return False
+        # Return True to continue with other migrations even if this one fails
+        return True
 
 def migrate_desktop_config():
     """
@@ -64,13 +72,18 @@ def migrate_desktop_config():
         if 'desktop_config' in tables:
             current_app.logger.info("[Web Desktop] Found old desktop_config table, checking for data to migrate")
 
-            # Check if there's data to migrate
-            result = db.engine.execute("SELECT COUNT(*) FROM desktop_config")
-            count = result.scalar()
+            try:
+                # Check if there's data to migrate
+                result = db.engine.execute("SELECT COUNT(*) FROM desktop_config")
+                count = result.scalar()
 
-            if count > 0:
-                current_app.logger.info(f"[Web Desktop] Found {count} records to migrate from desktop_config")
+                if count > 0:
+                    current_app.logger.info(f"[Web Desktop] Found {count} records to migrate from desktop_config")
+            except Exception as inner_e:
+                current_app.logger.warning(f"[Web Desktop] Could not query desktop_config table: {str(inner_e)}")
+                count = 0
 
+            try:
                 # Rename the old table to avoid future conflicts
                 if db.engine.name == 'sqlite':
                     db.engine.execute("ALTER TABLE desktop_config RENAME TO desktop_config_old")
@@ -80,6 +93,8 @@ def migrate_desktop_config():
                     db.engine.execute("ALTER TABLE desktop_config RENAME TO desktop_config_old")
 
                 current_app.logger.info("[Web Desktop] Renamed old table to desktop_config_old")
+            except Exception as inner_e:
+                current_app.logger.warning(f"[Web Desktop] Could not rename desktop_config table: {str(inner_e)}")
 
             return True
         else:
@@ -87,7 +102,8 @@ def migrate_desktop_config():
             return True
     except Exception as e:
         current_app.logger.error(f"[Web Desktop] Error migrating desktop_config: {str(e)}")
-        return False
+        # Return True to continue with other migrations even if this one fails
+        return True
 
 def migrate_challenge_desktop_link():
     """
@@ -101,13 +117,18 @@ def migrate_challenge_desktop_link():
         if 'challenge_desktop_link' in tables:
             current_app.logger.info("[Web Desktop] Found old challenge_desktop_link table, checking for data to migrate")
 
-            # Check if there's data to migrate
-            result = db.engine.execute("SELECT COUNT(*) FROM challenge_desktop_link")
-            count = result.scalar()
+            try:
+                # Check if there's data to migrate
+                result = db.engine.execute("SELECT COUNT(*) FROM challenge_desktop_link")
+                count = result.scalar()
 
-            if count > 0:
-                current_app.logger.info(f"[Web Desktop] Found {count} records to migrate from challenge_desktop_link")
+                if count > 0:
+                    current_app.logger.info(f"[Web Desktop] Found {count} records to migrate from challenge_desktop_link")
+            except Exception as inner_e:
+                current_app.logger.warning(f"[Web Desktop] Could not query challenge_desktop_link table: {str(inner_e)}")
+                count = 0
 
+            try:
                 # Rename the old table to avoid future conflicts
                 if db.engine.name == 'sqlite':
                     db.engine.execute("ALTER TABLE challenge_desktop_link RENAME TO challenge_desktop_link_old")
@@ -117,6 +138,8 @@ def migrate_challenge_desktop_link():
                     db.engine.execute("ALTER TABLE challenge_desktop_link RENAME TO challenge_desktop_link_old")
 
                 current_app.logger.info("[Web Desktop] Renamed old table to challenge_desktop_link_old")
+            except Exception as inner_e:
+                current_app.logger.warning(f"[Web Desktop] Could not rename challenge_desktop_link table: {str(inner_e)}")
 
             return True
         else:
@@ -124,7 +147,8 @@ def migrate_challenge_desktop_link():
             return True
     except Exception as e:
         current_app.logger.error(f"[Web Desktop] Error migrating challenge_desktop_link: {str(e)}")
-        return False
+        # Return True to continue with other migrations even if this one fails
+        return True
 
 def migrate_desktop_container():
     """
@@ -177,31 +201,37 @@ def migrate_desktop_container():
                     from ..models import DesktopContainer
                     DesktopContainer.__table__.create(db.engine)
 
-            # Check if there's data to migrate
-            result = db.engine.execute("SELECT COUNT(*) FROM desktop_container")
-            count = result.scalar()
+            try:
+                # Check if there's data to migrate
+                result = db.engine.execute("SELECT COUNT(*) FROM desktop_container")
+                count = result.scalar()
 
-            if count > 0:
-                current_app.logger.info(f"[Web Desktop] Found {count} records to migrate from desktop_container")
+                if count > 0:
+                    current_app.logger.info(f"[Web Desktop] Found {count} records to migrate from desktop_container")
 
-                # Migrate data
-                db.engine.execute("""
-                INSERT INTO web_desktop_containers (user_id, template_id, start_time, renew_count, status, uuid, port)
-                SELECT user_id, template_id, start_time, renew_count, status, uuid, port
-                FROM desktop_container
-                """)
+                    # Migrate data
+                    db.engine.execute("""
+                    INSERT INTO web_desktop_containers (user_id, template_id, start_time, renew_count, status, uuid, port)
+                    SELECT user_id, template_id, start_time, renew_count, status, uuid, port
+                    FROM desktop_container
+                    """)
 
-                current_app.logger.info("[Web Desktop] Data migration completed")
+                    current_app.logger.info("[Web Desktop] Data migration completed")
+            except Exception as inner_e:
+                current_app.logger.warning(f"[Web Desktop] Could not query desktop_container table: {str(inner_e)}")
 
-            # Rename the old table to avoid future conflicts
-            if db.engine.name == 'sqlite':
-                db.engine.execute("ALTER TABLE desktop_container RENAME TO desktop_container_old")
-            elif db.engine.name == 'mysql' or db.engine.name == 'mariadb':
-                db.engine.execute("RENAME TABLE desktop_container TO desktop_container_old")
-            else:
-                db.engine.execute("ALTER TABLE desktop_container RENAME TO desktop_container_old")
+            try:
+                # Rename the old table to avoid future conflicts
+                if db.engine.name == 'sqlite':
+                    db.engine.execute("ALTER TABLE desktop_container RENAME TO desktop_container_old")
+                elif db.engine.name == 'mysql' or db.engine.name == 'mariadb':
+                    db.engine.execute("RENAME TABLE desktop_container TO desktop_container_old")
+                else:
+                    db.engine.execute("ALTER TABLE desktop_container RENAME TO desktop_container_old")
 
-            current_app.logger.info("[Web Desktop] Renamed old table to desktop_container_old")
+                current_app.logger.info("[Web Desktop] Renamed old table to desktop_container_old")
+            except Exception as inner_e:
+                current_app.logger.warning(f"[Web Desktop] Could not rename desktop_container table: {str(inner_e)}")
 
             return True
         else:
@@ -209,4 +239,5 @@ def migrate_desktop_container():
             return True
     except Exception as e:
         current_app.logger.error(f"[Web Desktop] Error migrating desktop_container: {str(e)}")
-        return False
+        # Return True to continue with other migrations even if this one fails
+        return True

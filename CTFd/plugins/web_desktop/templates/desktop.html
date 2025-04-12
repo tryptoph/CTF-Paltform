@@ -2,6 +2,37 @@
 
 {% block stylesheets %}
 <link rel="stylesheet" href="{{ url_for('plugins.web_desktop.assets', path='css/webdesktop.css') }}">
+<style>
+    .desktop-credentials {
+        background-color: #fff3cd;
+        border-radius: 5px;
+        padding: 10px;
+        margin-top: 10px;
+        border: 2px solid #ffc107;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    .desktop-credentials .info-label {
+        color: #856404;
+        font-weight: bold;
+    }
+
+    .challenge-info-card {
+        border: 2px solid #17a2b8;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    .challenge-info-card .card-header {
+        font-weight: bold;
+    }
+
+    .challenge-info-card code {
+        background-color: #343a40;
+        color: #ffffff;
+        padding: 4px 8px;
+        border-radius: 4px;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -18,8 +49,8 @@
     <!-- Container Information -->
     <div id="container-status" class="desktop-container">
         {% if container %}
-        <div id="container-info" class="row">
-            <div class="col-lg-4">
+        <div id="container-info" class="row justify-content-center">
+            <div class="col-lg-8">
                 <div class="desktop-controls shadow-sm">
                     <div class="desktop-header bg-primary text-white p-3 rounded">
                         <img src="{{ url_for('plugins.web_desktop.assets', path='img/' + template_info.icon) if template_info else url_for('plugins.web_desktop.assets', path='img/desktop-icon.svg') }}"
@@ -63,14 +94,55 @@
                                 <span class="info-value">{{ container.renew_count }} / {{ config.get('web_desktop:docker_max_renew_count', 5) }}</span>
                             </div>
                         </div>
+
+                        <!-- Debug: Template info: {{ template_info }} -->
+                        <!-- Debug: Docker image: {{ template_info.docker_image if template_info else 'None' }} -->
+                        {% if template_info and (template_info.docker_image == "my-kali-desktop:1.14.0" or 'kali' in template_info.docker_image|lower) %}
+                        <div class="desktop-info-item desktop-credentials">
+                            <i class="fas fa-key text-danger"></i>
+                            <div>
+                                <span class="info-label">Login Credentials</span>
+                                <span class="info-value">Username: <strong>kasm_user</strong> / Password: <strong>password</strong></span>
+                            </div>
+                        </div>
+                        {% endif %}
                     </div>
+
+                    {% if template_info and (template_info.docker_image == "my-kali-desktop:1.14.0" or 'kali' in template_info.docker_image|lower) %}
+                    <div class="desktop-info-card shadow-sm mt-3 challenge-info-card">
+                        <div class="card-header bg-info text-white">
+                            <i class="fas fa-info-circle mr-2"></i> Challenge Container Access
+                        </div>
+                        <div class="card-body">
+                            <p>To access challenge containers from this desktop, use the following URL format:</p>
+                            <div class="alert alert-dark">
+                                <code>http://challenge:[port]</code>
+                            </div>
+
+                            {% if challenge_container and challenge_container.port %}
+                            <div class="alert alert-success">
+                                <i class="fas fa-check-circle mr-2"></i> You have an active challenge container!
+                                <div class="mt-2">
+                                    <strong>Access URL:</strong> <code>http://challenge:{% if challenge_container.internal_port %}{{ challenge_container.internal_port }}{% else %}{{ challenge_container.port }}{% endif %}</code>
+                                </div>
+
+                            </div>
+                            {% else %}
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle mr-2"></i> No active challenge containers found.
+                                <div class="mt-2">Launch a challenge from the Challenges page to get started.</div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
 
                     <div class="desktop-actions">
                         <a href="https://{{ config.get('web_desktop:domain', 'localhost') }}:{{ container.port }}"
-                           id="direct-launch-btn" class="btn btn-lg btn-primary btn-block direct-launch-btn mb-3"
+                           id="direct-launch-btn" class="btn btn-lg btn-success btn-block direct-launch-btn mb-3"
                            data-url="https://{{ config.get('web_desktop:domain', 'localhost') }}:{{ container.port }}"
-                           target="_blank">
-                            <i class="fas fa-external-link-alt mr-2"></i> Open in New Tab
+                           target="_blank" style="font-size: 1.2rem; padding: 15px;">
+                            <i class="fas fa-desktop mr-2"></i> Access Your Desktop
                         </a>
 
                         <div class="action-buttons-row">
@@ -91,17 +163,11 @@
                             </form>
                         </div>
                     </div>
-                </div>
-            </div>
-            <div class="col-lg-8">
-                <div class="desktop-iframe-container shadow">
-                    <div class="embed-responsive embed-responsive-16by9">
-                        <iframe id="desktop-iframe" src="https://{{ config.get('web_desktop:domain', 'localhost') }}:{{ container.port }}" class="embed-responsive-item" allowfullscreen></iframe>
+
+                    <div class="alert alert-info mt-3 shadow-sm text-center">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Click the "Open in New Tab" button below to access your desktop.
                     </div>
-                </div>
-                <div class="alert alert-info mt-3 shadow-sm">
-                    <i class="fas fa-info-circle mr-2"></i>
-                    If the embedded view doesn't work, use the "Open in New Tab" button to access your desktop directly.
                 </div>
             </div>
         </div>

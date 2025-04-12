@@ -32,15 +32,25 @@ try:
     DynamicDockerChallenge = whale_models.DynamicDockerChallenge
     WhaleConfig = whale_models.WhaleConfig
 
+    # Log successful import
+    print("[Web Desktop] Successfully imported CTFd-whale models")
+
     # Import control directly, not through methods
     whale_control = importlib.import_module('CTFd.plugins.ctfd-whale.utils.control')
     WhaleControlUtil = whale_control.ControlUtil
+
+    # Import DB container
+    whale_db = importlib.import_module('CTFd.plugins.ctfd-whale.utils.db')
+    WhaleDBContainer = None
+    if hasattr(whale_db, 'DBContainer'):
+        WhaleDBContainer = whale_db.DBContainer
 except Exception as e:
     current_app.logger.error(f"[Web Desktop] Error importing CTFd-whale components: {str(e)}")
     WhaleContainer = None
     DynamicDockerChallenge = None
     WhaleConfig = None
     WhaleControlUtil = None
+    WhaleDBContainer = None
 
 from .models import DesktopTemplate, DesktopConfig, DesktopContainer, ChallengeDesktopLink, create_all
 from .utils.migrations import upgrade as db_upgrade
@@ -132,16 +142,32 @@ def load(app):
             # Get user's container (use whale container directly)
             whale_container = None
             template_info = None
+            challenge_container = None
 
             if WhaleContainer:
                 whale_container = WhaleContainer.query.filter_by(user_id=user.id, container_type="desktop").first()
 
+                # Check if user has a challenge container
+                if WhaleContainer:
+                    challenge_container = WhaleContainer.query.filter_by(user_id=user.id, container_type="challenge").first()
+
+                    # If we have a challenge container, get the internal port from the challenge
+                    if challenge_container and challenge_container.challenge_id:
+                        # Get the DynamicDockerChallenge to find the internal port
+                        if DynamicDockerChallenge:
+                            challenge = DynamicDockerChallenge.query.filter_by(id=challenge_container.challenge_id).first()
+                            if challenge:
+                                # Store the internal port in the container object for template access
+                                challenge_container.internal_port = challenge.redirect_port
+                                current_app.logger.info(f"[Web Desktop] Challenge internal port: {challenge.redirect_port}")
+
                 # If we have a container, try to get its template info
-                if whale_container and whale_container.challenge_id:
-                    # Try to find a matching template by name
-                    template = DesktopTemplate.query.filter_by(name=whale_container.challenge.name).first()
-                    if template:
-                        template_info = template
+                if whale_container:
+                    # Get the desktop container to find the template_id
+                    desktop_container = DesktopContainer.query.filter_by(user_id=user.id).first()
+                    if desktop_container and desktop_container.template_id:
+                        template_info = DesktopTemplate.query.filter_by(id=desktop_container.template_id).first()
+                        current_app.logger.info(f"[Web Desktop] Found template: {template_info.name if template_info else 'None'}, Docker image: {template_info.docker_image if template_info else 'None'}")
 
             # Get templates
             templates = DesktopTemplate.query.filter_by(is_enabled=True).all()
@@ -167,7 +193,8 @@ def load(app):
                 templates=templates,
                 nonce=nonce,
                 now=datetime.datetime.now(),
-                config=config_wrapper
+                config=config_wrapper,
+                challenge_container=challenge_container
             )
         except Exception as e:
             current_app.logger.error(f"[Web Desktop] Error in desktop_view: {str(e)}")
