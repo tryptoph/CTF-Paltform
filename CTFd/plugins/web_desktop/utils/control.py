@@ -69,6 +69,43 @@ class ControlUtil:
             template = DesktopTemplate.query.filter_by(id=template_id).first()
             if not template:
                 return False, 'Invalid template'
+                
+            # Ensure the user network exists first
+            try:
+                # Import docker module and DockerUtils directly
+                docker_utils = importlib.import_module('CTFd.plugins.ctfd-whale.utils.docker')
+                DockerUtils = docker_utils.DockerUtils
+                docker_types = importlib.import_module('docker.types')
+                cache_provider = importlib.import_module('CTFd.plugins.ctfd-whale.utils.cache')
+                CacheProvider = cache_provider.CacheProvider
+                
+                # Check if user network exists
+                network_name = f'user-{user_id}-network'
+                client = DockerUtils.client
+                networks = client.networks.list(names=[network_name])
+                
+                if not networks:
+                    current_app.logger.info(f"[Web Desktop] User network not found. Creating network {network_name}")
+                    
+                    # Get a network range from the cache
+                    range_prefix = CacheProvider(app=current_app).get_available_network_range()
+                    ipam_pool = docker_types.IPAMPool(subnet=range_prefix)
+                    ipam_config = docker_types.IPAMConfig(driver='default', pool_configs=[ipam_pool])
+                    
+                    # Create the network explicitly before trying to create the container
+                    network = client.networks.create(
+                        network_name,
+                        internal=True,
+                        ipam=ipam_config,
+                        attachable=True,
+                        labels={'prefix': range_prefix, 'user_id': str(user_id)},
+                        driver="overlay",
+                        scope="swarm"
+                    )
+                    current_app.logger.info(f"[Web Desktop] Successfully created network {network_name}")
+            except Exception as net_err:
+                current_app.logger.error(f"[Web Desktop] Error ensuring user network exists: {str(net_err)}")
+                # Continue anyway, as the container creation code might handle this
 
             # Check if a challenge exists for this template, create one if not
             challenge = DynamicDockerChallenge.query.filter_by(
@@ -107,10 +144,80 @@ class ControlUtil:
                 db.session.commit()
                 current_app.logger.info(f"[Web Desktop] Created link between challenge and template: {template.name}")
 
-            # Use whale plugin to create container with desktop container type
-            result, message = WhaleControlUtil.try_add_container(user_id, challenge.id, container_type="desktop")
-            if not result:
-                return False, message
+            # Use whale plugin to create container with desktop container type - with retry logic
+            retry_count = 0
+            max_retries = 3
+            last_error = None
+            success = False
+            
+            while retry_count < max_retries and not success:
+                try:
+                    result, message = WhaleControlUtil.try_add_container(user_id, challenge.id, container_type="desktop")
+                    if result:
+                        success = True
+                        break
+                    else:
+                        # Check if the error contains network related issues
+                        if "network" in message.lower():
+                            current_app.logger.warning(f"[Web Desktop] Network error during container creation (attempt {retry_count+1}/{max_retries}): {message}")
+                            # If network issue, try to fix it before retrying
+                            try:
+                                # Try to recreate the network
+                                docker_utils = importlib.import_module('CTFd.plugins.ctfd-whale.utils.docker')
+                                DockerUtils = docker_utils.DockerUtils
+                                docker_types = importlib.import_module('docker.types')
+                                cache_provider = importlib.import_module('CTFd.plugins.ctfd-whale.utils.cache')
+                                CacheProvider = cache_provider.CacheProvider
+                                
+                                # Force network cleanup and recreation
+                                network_name = f'user-{user_id}-network'
+                                client = DockerUtils.client
+                                networks = client.networks.list(names=[network_name])
+                                
+                                # Remove any existing network with that name
+                                for network in networks:
+                                    try:
+                                        network.remove()
+                                        current_app.logger.info(f"[Web Desktop] Removed problematic network {network_name}")
+                                    except Exception:
+                                        pass
+                                
+                                # Create a new network
+                                range_prefix = CacheProvider(app=current_app).get_available_network_range()
+                                ipam_pool = docker_types.IPAMPool(subnet=range_prefix)
+                                ipam_config = docker_types.IPAMConfig(driver='default', pool_configs=[ipam_pool])
+                                
+                                network = client.networks.create(
+                                    network_name,
+                                    internal=True,
+                                    ipam=ipam_config,
+                                    attachable=True,
+                                    labels={'prefix': range_prefix, 'user_id': str(user_id)},
+                                    driver="overlay",
+                                    scope="swarm"
+                                )
+                                current_app.logger.info(f"[Web Desktop] Successfully recreated network {network_name}")
+                            except Exception as network_err:
+                                current_app.logger.error(f"[Web Desktop] Failed to fix network: {str(network_err)}")
+                        
+                        last_error = message
+                except Exception as container_err:
+                    current_app.logger.error(f"[Web Desktop] Error in container creation (attempt {retry_count+1}/{max_retries}): {str(container_err)}")
+                    last_error = str(container_err)
+                
+                # Increment retry counter
+                retry_count += 1
+                if retry_count < max_retries and not success:
+                    # Wait briefly before retrying
+                    import time
+                    time.sleep(1.5)
+            
+            # Check if we succeeded after retries
+            if not success:
+                if "network" in str(last_error).lower():
+                    current_app.logger.error(f"[Web Desktop] Failed after {max_retries} attempts to create container due to network issues")
+                    return False, f'Network error: Unable to create container after multiple attempts. Please try again later.'
+                return False, f'Failed to create container: {last_error}'
 
             # Get the container that was just created
             whale_container = WhaleContainer.query.filter_by(user_id=user_id, container_type="desktop").first()

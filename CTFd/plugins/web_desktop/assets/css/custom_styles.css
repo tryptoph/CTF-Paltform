@@ -1,0 +1,187 @@
+/* Custom overrides to remove animations, neumorphism, shadows and adjust button color */
+
+/* Remove header text shadows */
+.template-header h2,
+.template-header p,
+.jumbotron h1,
+.jumbotron p {
+    text-shadow: none !important;
+}
+
+/* Remove white shadow from Recommended badge */
+.badge-light,
+.badge {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    border: 1px solid #007bff;
+}
+
+/* Remove shadows from white window logo in header */
+.template-header img,
+.jumbotron img,
+img.desktop-header-icon,
+img.template-icon {
+    filter: none !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+}
+
+/* Specifically remove glow/shadow from Select a Desktop header and text */
+h1, h2, h3, .display-4, .lead, .template-header * {
+    text-shadow: none !important;
+    box-shadow: none !important;
+}
+
+/* Override any filter or glow effects */
+* {
+    filter: none !important;
+}
+
+/* Completely remove any glowing effects from badges */
+.badge, .badge-light, span[class*="badge"] {
+    filter: none !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+}
+
+/* Remove card animations */
+.template-card {
+    transition: none;
+    box-shadow: none;
+    border: 1px solid #333;
+}
+
+.template-card:hover {
+    transform: none;
+}
+
+.template-icon {
+    transition: none;
+}
+
+.template-card:hover .template-icon {
+    transform: none;
+}
+
+/* Remove all neumorphism styles */
+.card-neu, .wd-neu-flat {
+    box-shadow: none !important;
+    border: 1px solid #333;
+}
+
+/* Remove all button animations and transforms */
+.wd-btn-transform, .btn-pulse {
+    transition: none;
+    box-shadow: none;
+    animation: none;
+    background: none !important;
+    background-color: #007bff !important;
+}
+
+.wd-btn-transform:hover, .btn-pulse:hover, 
+.launch-btn:hover, .direct-launch-btn:hover,
+.action-form button:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+/* Change Launch button text color to blue */
+.launch-btn {
+    color: #007bff !important; 
+    background: white !important;
+    font-weight: bold;
+    border: 1px solid #007bff;
+}
+
+/* Remove fade in animations */
+.wd-fade-in {
+    animation: none !important;
+    opacity: 1 !important;
+}
+
+/* Remove hover effects */
+.wd-hover-rise:hover {
+    transform: none !important;
+}
+
+/* Remove pulsating effects */
+@keyframes wd-pulse { 
+    0% { transform: none; }
+    50% { transform: none; }
+    100% { transform: none; }
+}
+
+/* Remove gradient backgrounds */
+.template-card, .launch-btn {
+    background: none !important;
+}
+
+/* Challenge-style loading spinner */
+.wd-challenge-spinner {
+    display: inline-block;
+    width: 80px;
+    height: 80px;
+    border: 5px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #007bff;
+    animation: challenge-spin 1s ease-in-out infinite;
+    margin-bottom: 15px;
+}
+
+@keyframes challenge-spin {
+    to { transform: rotate(360deg); }
+}
+
+.wd-challenge-text {
+    color: #fff;
+    font-size: 20px;
+    margin-bottom: 20px;
+    font-weight: 500;
+}
+
+.wd-progress-container {
+    width: 300px;
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 0 auto;
+}
+
+.wd-progress-bar {
+    height: 8px;
+    width: 0%;
+    background-color: #007bff;
+    border-radius: 10px;
+    animation: progress 3s ease-in-out forwards;
+}
+
+@keyframes progress {
+    0% { width: 0%; }
+    100% { width: 100%; }
+}
+
+/* Make sure loading overlay is properly displayed */
+.loading-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background-color: rgba(0, 0, 0, 0.8) !important;
+    z-index: 9999 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    color: white !important;
+    flex-direction: column !important;
+}
+
+/* Style for Challenge Container Access header */
+.challenge-info-card .card-header {
+    background-color: #007bff !important;
+    border-bottom: 1px solid #0062cc !important;
+}
+
+.challenge-info-card {
+    border: 1px solid #007bff !important;
+}

@@ -1,5 +1,10 @@
 {% extends "whale_base.html" %}
 
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('plugins.web_desktop.assets', path='css/webdesktop-theme.css') }}">
+<link rel="stylesheet" href="{{ url_for('plugins.web_desktop.assets', path='css/webdesktop-animations.css') }}">
+{% endblock %}
+
 {% block menu %}
     <li class="nav-item">
         <a class="nav-link" href="{{ url_for('web_desktop.admin_panel') }}">Settings</a>
@@ -12,7 +17,7 @@
     </li>
 
     <li class="nav-item nav-link">
-        <button class="btn btn-success" id="add-template-btn" data-toggle="modal" data-target="#addTemplateModal">
+        <button class="btn btn-success wd-btn-transform" id="add-template-btn" data-toggle="modal" data-target="#addTemplateModal">
             <i class="fas fa-plus-circle mr-2"></i> Add Template
         </button>
     </li>
@@ -20,15 +25,15 @@
 
 {% block panel %}
     <div role="tabpanel" class="tab-pane active" id="templates">
-        <div class="alert alert-info">
+        <div class="alert alert-info wd-neu-flat">
             <i class="fas fa-info-circle mr-2"></i>
             Templates define the desktop environments available to users. Each template is based on a Docker image.
         </div>
 
-        <div class="row template-grid">
+        <div class="row template-grid wd-fade-in">
             {% for template in templates %}
             <div class="col-md-6 col-lg-4 mb-4">
-                <div class="card template-card h-100">
+                <div class="card template-card card-neu h-100 wd-hover-rise">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <div>
                             <img src="{{ url_for('plugins.web_desktop.assets', path='img/' + template.icon) }}"
@@ -38,12 +43,12 @@
                         </div>
                         <div>
                             {% if template.recommended %}
-                            <span class="badge badge-success">Recommended</span>
+                            <span class="badge badge-success wd-neu-badge wd-neu-badge-success">Recommended</span>
                             {% endif %}
                             {% if template.is_enabled %}
-                            <span class="badge badge-primary">Enabled</span>
+                            <span class="badge badge-primary wd-neu-badge wd-neu-badge-info">Enabled</span>
                             {% else %}
-                            <span class="badge badge-danger">Disabled</span>
+                            <span class="badge badge-danger wd-neu-badge wd-neu-badge-danger">Disabled</span>
                             {% endif %}
                         </div>
                     </div>
@@ -76,18 +81,18 @@
                         </div>
                     </div>
                     <div class="card-footer">
-                        <div class="btn-group w-100">
-                            <button class="btn btn-primary edit-template-btn" data-template-id="{{ template.id }}">
+                        <div class="btn-group w-100 wd-btn-group">
+                            <button class="btn btn-primary wd-btn-transform edit-template-btn" data-template-id="{{ template.id }}">
                                 <i class="fas fa-edit"></i> Edit
                             </button>
                             <form method="POST" action="{{ url_for('web_desktop.toggle_template', template_id=template.id) }}" class="d-inline">
                                 <input type="hidden" name="nonce" value="{{ nonce }}">
-                                <button type="submit" class="btn {% if template.is_enabled %}btn-warning{% else %}btn-success{% endif %}">
+                                <button type="submit" class="btn wd-btn-transform {% if template.is_enabled %}btn-warning{% else %}btn-success{% endif %}">
                                     <i class="fas {% if template.is_enabled %}fa-toggle-off{% else %}fa-toggle-on{% endif %}"></i>
                                     {% if template.is_enabled %}Disable{% else %}Enable{% endif %}
                                 </button>
                             </form>
-                            <button class="btn btn-danger delete-template-btn" data-template-id="{{ template.id }}" data-template-name="{{ template.name }}">
+                            <button class="btn btn-danger wd-btn-transform delete-template-btn" data-template-id="{{ template.id }}" data-template-name="{{ template.name }}">
                                 <i class="fas fa-trash-alt"></i> Delete
                             </button>
                         </div>
@@ -113,8 +118,8 @@
 <!-- Add Template Modal -->
 <div class="modal fade" id="addTemplateModal" tabindex="-1" role="dialog" aria-labelledby="addTemplateModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
+        <div class="modal-content card-neu">
+            <div class="modal-header bg-primary text-white rounded-top">
                 <h5 class="modal-title" id="addTemplateModalLabel"><i class="fas fa-plus-circle mr-2"></i> Add Desktop Template</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
@@ -127,11 +132,11 @@
                     <div class="form-row">
                         <div class="form-group col-md-8">
                             <label for="name">Template Name</label>
-                            <input type="text" class="form-control" id="name" name="name" required>
+                            <input type="text" class="form-control wd-neu-input" id="name" name="name" required>
                         </div>
                         <div class="form-group col-md-4">
                             <label for="icon">Icon</label>
-                            <select class="form-control" id="icon" name="icon">
+                            <select class="form-control wd-neu-select" id="icon" name="icon">
                                 <option value="desktop-icon.svg">Default</option>
                                 <option value="kali-logo.svg">Kali Linux</option>
                                 <option value="ubuntu-logo.svg">Ubuntu</option>
@@ -142,12 +147,12 @@
 
                     <div class="form-group">
                         <label for="description">Description</label>
-                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                        <textarea class="form-control wd-neu-input" id="description" name="description" rows="3"></textarea>
                     </div>
 
                     <div class="form-group">
                         <label for="docker_image">Docker Image</label>
-                        <input type="text" class="form-control" id="docker_image" name="docker_image" required placeholder="e.g., kasmweb/kali-rolling-desktop:1.14.0">
+                        <input type="text" class="form-control wd-neu-input" id="docker_image" name="docker_image" required placeholder="e.g., kasmweb/kali-rolling-desktop:1.14.0">
                         <small class="form-text text-muted">The Docker image to use for this template (e.g., kasmweb/kali-rolling-desktop:1.14.0)</small>
                     </div>
 
@@ -155,21 +160,21 @@
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label for="memory_limit">Memory Limit</label>
-                                <input type="text" class="form-control" id="memory_limit" name="memory_limit" value="2048m">
+                                <input type="text" class="form-control wd-neu-input" id="memory_limit" name="memory_limit" value="2048m">
                                 <small class="form-text text-muted">Memory limit (e.g., 2048m, 4g)</small>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label for="cpu_limit">CPU Limit</label>
-                                <input type="number" class="form-control" id="cpu_limit" name="cpu_limit" value="2.0" step="0.1">
+                                <input type="number" class="form-control wd-neu-input" id="cpu_limit" name="cpu_limit" value="2.0" step="0.1">
                                 <small class="form-text text-muted">CPU cores (e.g., 1.0, 2.0)</small>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label for="desktop_port">Desktop Port</label>
-                                <input type="number" class="form-control" id="desktop_port" name="desktop_port" value="6901">
+                                <input type="number" class="form-control wd-neu-input" id="desktop_port" name="desktop_port" value="6901">
                                 <small class="form-text text-muted">Port for Kasm: 6901</small>
                             </div>
                         </div>
@@ -179,14 +184,14 @@
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label for="display_order">Display Order</label>
-                                <input type="number" class="form-control" id="display_order" name="display_order" value="0">
+                                <input type="number" class="form-control wd-neu-input" id="display_order" name="display_order" value="0">
                                 <small class="form-text text-muted">Order in the template list</small>
                             </div>
                         </div>
                         <div class="col-md-8">
                             <div class="form-group">
                                 <label for="connection_type">Connection Type</label>
-                                <select class="form-control" id="connection_type" name="connection_type">
+                                <select class="form-control wd-neu-select" id="connection_type" name="connection_type">
                                     <option value="direct">Direct Connection</option>
                                 </select>
                                 <small class="form-text text-muted">How users will connect to the desktop</small>
@@ -209,8 +214,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Add Template</button>
+                    <button type="button" class="btn btn-secondary wd-btn-transform" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary wd-btn-transform">Add Template</button>
                 </div>
             </form>
         </div>
@@ -336,7 +341,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger" id="confirm-delete-btn">Delete Template</button>
+                <button type="button" class="btn btn-danger wd-btn-transform" id="confirm-delete-btn">Delete Template</button>
             </div>
         </div>
     </div>
@@ -346,11 +351,15 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Apply animations on load
+    applyAnimations();
+    
     // Edit template button click handler
     const editButtons = document.querySelectorAll('.edit-template-btn');
     editButtons.forEach(button => {
         button.addEventListener('click', function() {
             const templateId = this.getAttribute('data-template-id');
+            showLoading('Loading template details...');
             fetchTemplateDetails(templateId);
         });
     });
@@ -372,6 +381,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (confirmDeleteBtn) {
         confirmDeleteBtn.addEventListener('click', function() {
             const templateId = this.getAttribute('data-template-id');
+            showLoading('Deleting template...');
             deleteTemplate(templateId);
         });
     };
@@ -382,8 +392,77 @@ document.addEventListener('DOMContentLoaded', function() {
         editForm.addEventListener('submit', function(e) {
             e.preventDefault();
             const templateId = document.getElementById('edit-template-id').value;
+            showLoading('Updating template...');
             updateTemplate(templateId, new FormData(editForm));
         });
+    }
+    
+    // Add template form submit handler
+    const addForm = document.getElementById('add-template-form');
+    if (addForm) {
+        addForm.addEventListener('submit', function(e) {
+            // We don't prevent default here since we want the regular form submission
+            showLoading('Creating new template...');
+        });
+    }
+    
+    // Apply visual effects and animations
+    function applyAnimations() {
+        // Add staggered fade-in to template cards
+        const cards = document.querySelectorAll('.template-card');
+        cards.forEach((card, index) => {
+            card.style.animationDelay = (index * 0.1) + 's';
+            card.classList.add('wd-fade-in');
+        });
+        
+        // Add subtle pulse to recommended templates
+        const recommendedBadges = document.querySelectorAll('.badge-success');
+        recommendedBadges.forEach(badge => {
+            badge.classList.add('wd-pulse');
+        });
+    }
+    
+    // Loading overlay functions
+    function showLoading(message) {
+        // Create loading overlay if it doesn't exist
+        let loadingOverlay = document.getElementById('loading-overlay');
+        if (!loadingOverlay) {
+            loadingOverlay = document.createElement('div');
+            loadingOverlay.id = 'loading-overlay';
+            loadingOverlay.className = 'loading-overlay';
+            loadingOverlay.innerHTML = `
+                <div class="wd-challenge-spinner"></div>
+                <div id="loading-text" class="wd-challenge-text">${message}</div>
+                <div class="wd-progress-container mt-3" style="width: 300px;">
+                    <div class="wd-progress-bar"></div>
+                </div>
+            `;
+            document.body.appendChild(loadingOverlay);
+        } else {
+            document.getElementById('loading-text').textContent = message;
+        }
+        
+        loadingOverlay.style.display = 'flex';
+        
+        // Reset progress bar animation
+        const progressBar = loadingOverlay.querySelector('.wd-progress-bar');
+        if (progressBar) {
+            progressBar.style.animation = 'none';
+            void progressBar.offsetWidth; // Force reflow
+            progressBar.style.animation = 'wd-progress 8s ease-in-out forwards';
+        }
+    }
+    
+    function hideLoading() {
+        const loadingOverlay = document.getElementById('loading-overlay');
+        if (loadingOverlay) {
+            // Add fade out effect
+            loadingOverlay.style.opacity = '0';
+            setTimeout(() => {
+                loadingOverlay.style.display = 'none';
+                loadingOverlay.style.opacity = '1';
+            }, 300);
+        }
     }
 
     // Function to fetch template details
@@ -398,16 +477,18 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(response => response.json())
         .then(data => {
+            hideLoading();
             if (data.success) {
                 populateEditForm(data.data);
                 $('#editTemplateModal').modal('show');
             } else {
-                alert('Error fetching template details: ' + data.message);
+                showNotification('Error fetching template details: ' + data.message, 'danger');
             }
         })
         .catch(error => {
+            hideLoading();
             console.error('Error:', error);
-            alert('Error fetching template details');
+            showNotification('Error fetching template details', 'danger');
         });
     }
 
@@ -449,8 +530,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Get CSRF token from form
         const csrfNonce = document.querySelector('input[name="csrf_nonce"]').value;
 
-        console.log('Using CSRF token:', csrfNonce); // Debug log
-
         fetch(`/api/v1/plugins/webdesktop/admin/template/${templateId}`, {
             method: 'PUT',
             credentials: 'same-origin',
@@ -458,37 +537,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
                 'CSRF-Token': csrfNonce,
-                'X-CSRF-Token': csrfNonce, // Try alternative header name
-                'Nonce': csrfNonce // Try another alternative
+                'X-CSRF-Token': csrfNonce,
+                'Nonce': csrfNonce 
             },
             body: JSON.stringify(data)
         })
         .then(response => response.json())
         .then(data => {
+            hideLoading();
             if (data.success) {
                 $('#editTemplateModal').modal('hide');
-                // Show success message
-                const alertDiv = document.createElement('div');
-                alertDiv.className = 'alert alert-success alert-dismissible fade show';
-                alertDiv.innerHTML = `
-                    <strong>Success!</strong> Template updated successfully.
-                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                `;
-                document.querySelector('.tab-content').prepend(alertDiv);
+                // Show success notification with animation
+                showNotification('Template updated successfully! Refreshing page...', 'success');
 
                 // Reload the page after a short delay
                 setTimeout(() => {
                     window.location.reload();
                 }, 1500);
             } else {
-                alert('Error updating template: ' + data.message);
+                showNotification('Error updating template: ' + data.message, 'danger');
             }
         })
         .catch(error => {
+            hideLoading();
             console.error('Error:', error);
-            alert('Error updating template');
+            showNotification('Error updating template', 'danger');
         });
     }
 
@@ -510,31 +583,69 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(response => response.json())
         .then(data => {
+            hideLoading();
             if (data.success) {
                 $('#deleteTemplateModal').modal('hide');
-                // Show success message
-                const alertDiv = document.createElement('div');
-                alertDiv.className = 'alert alert-success alert-dismissible fade show';
-                alertDiv.innerHTML = `
-                    <strong>Success!</strong> Template deleted successfully.
-                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                `;
-                document.querySelector('.tab-content').prepend(alertDiv);
+                showNotification('Template deleted successfully! Refreshing page...', 'success');
 
                 // Reload the page after a short delay
                 setTimeout(() => {
                     window.location.reload();
                 }, 1500);
             } else {
-                alert('Error deleting template: ' + data.message);
+                showNotification('Error deleting template: ' + data.message, 'danger');
             }
         })
         .catch(error => {
+            hideLoading();
             console.error('Error:', error);
-            alert('Error deleting template');
+            showNotification('Error deleting template', 'danger');
         });
+    }
+    
+    // Function to show beautiful notification
+    function showNotification(message, type) {
+        const tabContent = document.querySelector('.tab-content');
+        if (!tabContent) return;
+        
+        // Remove any existing notifications
+        const existingAlerts = document.querySelectorAll('.alert');
+        existingAlerts.forEach(alert => {
+            alert.remove();
+        });
+        
+        // Create a new notification
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show wd-slide-in-right`;
+        alertDiv.setAttribute('role', 'alert');
+        
+        // Add icon based on type
+        let icon = 'info-circle';
+        if (type === 'success') icon = 'check-circle';
+        if (type === 'danger') icon = 'exclamation-triangle';
+        if (type === 'warning') icon = 'exclamation-circle';
+        
+        alertDiv.innerHTML = `
+            <i class="fas fa-${icon} mr-2"></i>
+            <strong>${type === 'success' ? 'Success!' : type === 'danger' ? 'Error!' : 'Notice!'}</strong> ${message}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        `;
+        
+        // Insert at the top of the tab content
+        tabContent.insertBefore(alertDiv, tabContent.firstChild);
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            alertDiv.classList.add('wd-slide-in-left');
+            alertDiv.classList.remove('show');
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.parentNode.removeChild(alertDiv);
+                }
+            }, 500);
+        }, 5000);
     }
 });
 </script>

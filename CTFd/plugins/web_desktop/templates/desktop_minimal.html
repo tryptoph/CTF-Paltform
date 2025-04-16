@@ -44,7 +44,7 @@
 {% block content %}
 <div class="container">
     <h2>Kali Desktop</h2>
-    
+
     {% if user %}
         {% if container %}
             <div class="desktop-card">
@@ -148,9 +148,9 @@
                     {% endif %}
                 </div>
             </div>
-            
+
             <div class="alert alert-info mt-3">
-                <i class="fas fa-info-circle"></i> 
+                <i class="fas fa-info-circle"></i>
                 Desktop sessions will be available for {{ get_config("whale:docker_timeout", 3600)|int // 60 }} minutes after launch.
             </div>
         {% endif %}
@@ -251,11 +251,11 @@ function showAlert(message, type = 'danger') {
             </button>
         </div>
     `;
-    
+
     // Insert at the top of the container
     const container = document.querySelector('.container');
     container.insertAdjacentHTML('afterbegin', alertHtml);
-    
+
     // Auto-dismiss after 5 seconds
     setTimeout(() => {
         const alertElement = document.querySelector('.alert');
@@ -268,7 +268,7 @@ function showAlert(message, type = 'danger') {
 function deleteContainer() {
     // Show loading indicator
     showAlert('<i class="fas fa-spinner fa-spin"></i> Deleting desktop session...', 'info');
-    
+
     fetch('/api/v1/plugins/ctfd-whale/container', {
         method: 'DELETE',
         credentials: 'same-origin',
@@ -294,7 +294,7 @@ function renewContainer() {
     const renewBtn = document.querySelector('button.btn-info');
     renewBtn.disabled = true;
     renewBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Renewing...';
-    
+
     fetch('/api/v1/plugins/ctfd-whale/container', {
         method: 'PATCH',
         credentials: 'same-origin',
@@ -337,38 +337,38 @@ function launchDesktop(templateId) {
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting...';
     });
-    
+
     // Create loading overlay
     const loadingOverlay = document.createElement('div');
     loadingOverlay.id = 'loading-overlay';
     loadingOverlay.style = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999; display:flex; justify-content:center; align-items:center;';
-    
+
     // Create loading content
     const loadingContent = document.createElement('div');
     loadingContent.style = 'background:white; padding:30px; border-radius:10px; text-align:center; max-width:500px;';
     loadingContent.innerHTML = `
         <h4><i class="fas fa-server"></i> Launching Desktop Environment</h4>
         <div class="progress mt-3 mb-3">
-            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" 
+            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
                  style="width: 100%"></div>
         </div>
         <p id="launch-status">Initializing container...</p>
         <small class="text-muted">This may take a moment. Please don't refresh the page.</small>
     `;
-    
+
     loadingOverlay.appendChild(loadingContent);
     document.body.appendChild(loadingOverlay);
-    
+
     // Update status function
     const updateStatus = (message) => {
         document.getElementById('launch-status').innerText = message;
     };
-    
+
     // Animation sequence
     setTimeout(() => updateStatus('Creating container...'), 1000);
     setTimeout(() => updateStatus('Configuring network...'), 3000);
     setTimeout(() => updateStatus('Starting desktop services...'), 5000);
-    
+
     // Call the API to launch a desktop
     fetch(`/api/v1/plugins/webdesktop/launch/${templateId}`, {
         method: 'POST',
@@ -381,7 +381,7 @@ function launchDesktop(templateId) {
     .then(data => {
         if (data.success) {
             updateStatus('Desktop is ready! Redirecting...');
-            
+
             // Show success animation
             loadingContent.innerHTML = `
                 <div class="text-center">
@@ -392,20 +392,20 @@ function launchDesktop(templateId) {
                     <p>Redirecting to your desktop environment...</p>
                 </div>
             `;
-            
+
             // Add the success animation class
             setTimeout(() => {
                 document.querySelector('.circle-loader').classList.add('load-complete');
                 document.querySelector('.checkmark').style.display = 'block';
             }, 500);
-            
+
             setTimeout(() => {
                 window.location.reload();
             }, 2500);
         } else {
             // Remove loading overlay
             document.body.removeChild(loadingOverlay);
-            
+
             showAlert(`<i class="fas fa-exclamation-triangle"></i> ${data.message}`);
             // Re-enable buttons
             document.querySelectorAll('.launch-btn').forEach(btn => {
@@ -416,10 +416,10 @@ function launchDesktop(templateId) {
     })
     .catch(error => {
         console.error('Error:', error);
-        
+
         // Remove loading overlay
         document.body.removeChild(loadingOverlay);
-        
+
         showAlert('<i class="fas fa-exclamation-triangle"></i> An unexpected error occurred');
         // Re-enable buttons
         document.querySelectorAll('.launch-btn').forEach(btn => {
@@ -443,7 +443,7 @@ const timerElement = document.createElement('div');
 timerElement.innerHTML = `
     <p><strong>Remaining Time:</strong> <span id="timer">Calculating...</span></p>
     <div class="progress">
-        <div id="timer-progress" class="progress-bar" role="progressbar" style="width: 100%" 
+        <div id="timer-progress" class="progress-bar" role="progressbar" style="width: 100%"
              aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">100%</div>
     </div>
 `;
@@ -453,25 +453,29 @@ function formatTime(seconds) {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-    
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+    if (hours > 0) {
+        return `${hours}h ${minutes}m ${secs}s`;
+    } else {
+        return `${minutes}m ${secs}s`;
+    }
 }
 
 function updateTimer() {
     const timerElement = document.getElementById('timer');
     const progressBar = document.getElementById('timer-progress');
-    
+
     if (!timerElement || !progressBar) return;
-    
+
     // Update timer text
     timerElement.textContent = formatTime(remainingSeconds);
-    
+
     // Update progress bar
     const percentage = Math.max(0, Math.floor((remainingSeconds / timeout) * 100));
     progressBar.style.width = `${percentage}%`;
     progressBar.setAttribute('aria-valuenow', percentage);
     progressBar.textContent = `${percentage}%`;
-    
+
     // Update color based on time remaining
     if (percentage < 20) {
         progressBar.className = 'progress-bar bg-danger';
@@ -482,10 +486,10 @@ function updateTimer() {
     } else {
         progressBar.className = 'progress-bar bg-success';
     }
-    
+
     // Decrement timer
     remainingSeconds--;
-    
+
     // Check if expired
     if (remainingSeconds <= 0) {
         clearInterval(timerInterval);

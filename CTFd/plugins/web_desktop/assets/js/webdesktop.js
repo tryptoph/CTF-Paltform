@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function launchDesktop(templateId) {
     // Show loading overlay
     showLoading('Launching desktop environment...');
-    
+
     fetch('/api/v1/plugins/webdesktop/container', {
         method: 'POST',
         headers: {
@@ -83,7 +83,7 @@ function launchDesktop(templateId) {
 // Destroy the current desktop
 function destroyDesktop() {
     showLoading('Destroying desktop environment...');
-    
+
     fetch('/api/v1/plugins/webdesktop/container', {
         method: 'DELETE',
         headers: {
@@ -112,7 +112,7 @@ function destroyDesktop() {
 // Renew the current desktop time
 function renewDesktop() {
     showLoading('Renewing desktop time...');
-    
+
     fetch('/api/v1/plugins/webdesktop/container/renew', {
         method: 'PATCH',
         headers: {
@@ -145,9 +145,9 @@ function renewDesktop() {
 function checkContainerStatus() {
     const statusContainer = document.getElementById('container-status');
     if (!statusContainer) return;
-    
+
     console.log('Loading container status...');
-    
+
     fetch('/api/v1/plugins/webdesktop/container/status', {
         method: 'GET',
         headers: {
@@ -160,19 +160,19 @@ function checkContainerStatus() {
     })
     .then(data => {
         console.log('Container status data:', data);
-        
+
         if (data && data.container) {
             console.log('Showing container status:', data.container.status, data);
-            
+
             // Update status badge
             const statusBadge = document.getElementById('status-badge');
             if (statusBadge) {
                 statusBadge.textContent = data.container.status;
                 statusBadge.className = 'status-badge';
-                
+
                 if (data.container.status === 'running') {
                     statusBadge.classList.add('status-running');
-                    
+
                     // Enable iframe if it exists
                     const desktopIframe = document.getElementById('desktop-iframe');
                     if (desktopIframe) {
@@ -180,35 +180,45 @@ function checkContainerStatus() {
                     }
                 } else if (data.container.status === 'starting') {
                     statusBadge.classList.add('status-starting');
-                    
+
                     // Check again in 5 seconds
                     setTimeout(checkContainerStatus, 5000);
                 } else {
                     statusBadge.classList.add('status-stopped');
                 }
             }
-            
-            // Update remaining time
+
+            // Update remaining time with seconds
             const timeRemaining = document.getElementById('time-remaining');
             if (timeRemaining && data.container.expire_date) {
                 const expireDate = new Date(data.container.expire_date);
                 const now = new Date();
                 const diffMs = expireDate - now;
-                const diffMins = Math.floor(diffMs / 60000);
-                
-                if (diffMins > 0) {
-                    timeRemaining.textContent = `${diffMins} minutes`;
+                const diffSeconds = Math.floor(diffMs / 1000);
+
+                if (diffSeconds > 0) {
+                    // Calculate hours, minutes, seconds
+                    const hours = Math.floor(diffSeconds / 3600);
+                    const minutes = Math.floor((diffSeconds % 3600) / 60);
+                    const seconds = diffSeconds % 60;
+
+                    // Format with hours, minutes, and seconds
+                    if (hours > 0) {
+                        timeRemaining.textContent = `${hours}h ${minutes}m ${seconds}s`;
+                    } else {
+                        timeRemaining.textContent = `${minutes}m ${seconds}s`;
+                    }
                 } else {
                     timeRemaining.textContent = 'Expiring soon';
                 }
             }
-            
+
             // Update container info
             const containerInfo = document.getElementById('container-info');
             if (containerInfo) {
                 containerInfo.style.display = 'block';
             }
-            
+
             // Update direct launch URL
             const directLaunchBtn = document.getElementById('direct-launch-btn');
             if (directLaunchBtn && data.container.access_url) {
@@ -216,13 +226,13 @@ function checkContainerStatus() {
             }
         } else {
             console.log('No container running');
-            
+
             // Hide container info
             const containerInfo = document.getElementById('container-info');
             if (containerInfo) {
                 containerInfo.style.display = 'none';
             }
-            
+
             // Show template selection
             const templateSelection = document.getElementById('template-selection');
             if (templateSelection) {
@@ -244,7 +254,7 @@ function getCSRFToken() {
 function showAlert(type, message) {
     const alertContainer = document.getElementById('alert-container');
     if (!alertContainer) return;
-    
+
     const alertHTML = `
         <div class="alert alert-${type} alert-dismissible fade show" role="alert">
             ${message}
@@ -253,9 +263,9 @@ function showAlert(type, message) {
             </button>
         </div>
     `;
-    
+
     alertContainer.innerHTML = alertHTML;
-    
+
     // Auto-dismiss after 5 seconds
     setTimeout(function() {
         const alerts = document.querySelectorAll('.alert');
@@ -267,23 +277,23 @@ function showAlert(type, message) {
 
 function showLoading(message) {
     let loadingOverlay = document.getElementById('loading-overlay');
-    
+
     if (!loadingOverlay) {
         loadingOverlay = document.createElement('div');
         loadingOverlay.id = 'loading-overlay';
         loadingOverlay.className = 'loading-overlay';
-        
+
         const spinner = document.createElement('div');
         spinner.className = 'spinner';
-        
+
         const loadingText = document.createElement('div');
         loadingText.id = 'loading-text';
-        
+
         loadingOverlay.appendChild(spinner);
         loadingOverlay.appendChild(loadingText);
         document.body.appendChild(loadingOverlay);
     }
-    
+
     document.getElementById('loading-text').textContent = message || 'Loading...';
     loadingOverlay.style.display = 'flex';
 }

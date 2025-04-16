@@ -1,0 +1,386 @@
+/* Web Desktop Plugin - Enhanced Theme Variables
+ * This file contains CSS variables for consistent theming across the plugin
+ * It supports both light and dark modes with improved contrast and neumorphic effects
+ */
+
+:root {
+  /* Base colors - Light theme */
+  --wd-bg-primary: #ffffff;
+  --wd-bg-secondary: #f8f9fa;
+  --wd-bg-tertiary: #e9ecef;
+  --wd-bg-accent: #f0f7ff;
+
+  /* Text colors - Light theme */
+  --wd-text-primary: #212529;
+  --wd-text-secondary: #495057;
+  --wd-text-muted: #6c757d;
+  --wd-text-accent: #ffffff;
+
+  /* Border colors - Light theme */
+  --wd-border-light: #e9ecef;
+  --wd-border-medium: #dee2e6;
+  --wd-border-dark: #ced4da;
+
+  /* Status colors - Universal */
+  --wd-success: #28a745;
+  --wd-warning: #ffc107;
+  --wd-danger: #dc3545;
+  --wd-info: #17a2b8;
+
+  /* Status text colors - Light theme */
+  --wd-success-text: #155724;
+  --wd-warning-text: #856404;
+  --wd-danger-text: #721c24;
+  --wd-info-text: #0c5460;
+
+  /* Status border colors - Light theme */
+  --wd-success-border: #c3e6cb;
+  --wd-warning-border: #ffeeba;
+  --wd-danger-border: #f5c6cb;
+  --wd-info-border: #bee5eb;
+
+  /* Status background colors with transparency - Light theme */
+  --wd-bg-success: rgba(40, 167, 69, 0.15);
+  --wd-bg-warning: rgba(255, 193, 7, 0.15);
+  --wd-bg-danger: rgba(220, 53, 69, 0.15);
+  --wd-bg-info: rgba(23, 162, 184, 0.15);
+
+  /* Removed neumorphic shadows */
+
+  /* Animation durations */
+  --wd-transition-fast: 0.15s;
+  --wd-transition-medium: 0.3s;
+  --wd-transition-slow: 0.5s;
+
+  /* Spacing */
+  --wd-spacing-xs: 0.25rem;
+  --wd-spacing-sm: 0.5rem;
+  --wd-spacing-md: 1rem;
+  --wd-spacing-lg: 1.5rem;
+  --wd-spacing-xl: 2rem;
+
+  /* Border radius */
+  --wd-radius-sm: 0.25rem;
+  --wd-radius-md: 0.5rem;
+  --wd-radius-lg: 1rem;
+  --wd-radius-xl: 1.5rem;
+  --wd-radius-circle: 50%;
+
+  /* Icon filters for light/dark mode */
+  --wd-icon-filter: none;
+  --wd-icon-filter-light: none;
+}
+
+/* Dark theme overrides */
+[data-theme="dark"], .theme-dark, .dark-mode {
+  /* Base colors - Dark theme */
+  --wd-bg-primary: #212529;
+  --wd-bg-secondary: #2c3136;
+  --wd-bg-tertiary: #343a40;
+  --wd-bg-accent: #1a2332;
+  --wd-card-bg: #1e2126;
+
+  /* Text colors - Dark theme */
+  --wd-text-primary: #f8f9fa;
+  --wd-text-secondary: #adb5bd;
+  --wd-text-muted: #868e96;
+  --wd-text-accent: #ffffff;
+
+  /* Border colors - Dark theme */
+  --wd-border-light: #343a40;
+  --wd-border-medium: #495057;
+  --wd-border-dark: #6c757d;
+
+  /* Status text colors - Dark theme - Enhanced for better contrast */
+  --wd-success-text: #d4edda;
+  --wd-warning-text: #fff3cd;
+  --wd-danger-text: #f8d7da;
+  --wd-info-text: #d1ecf1;
+
+  /* Status border colors - Dark theme */
+  --wd-success-border: #28a745;
+  --wd-warning-border: #ffc107;
+  --wd-danger-border: #dc3545;
+  --wd-info-border: #17a2b8;
+
+  /* Status background colors with transparency - Dark theme */
+  --wd-bg-success: rgba(40, 167, 69, 0.25);
+  --wd-bg-warning: rgba(255, 193, 7, 0.25);
+  --wd-bg-danger: rgba(220, 53, 69, 0.25);
+  --wd-bg-info: rgba(23, 162, 184, 0.25);
+
+  /* Removed neumorphic shadows */
+
+  /* Icon filters for dark mode - Brighten icons */
+  --wd-icon-filter: brightness(1.2);
+  --wd-icon-filter-light: brightness(10);
+}
+
+/* Flat design classes (replacing neumorphic effects) */
+.wd-neu-flat {
+  background-color: var(--wd-bg-secondary);
+  border-radius: var(--wd-radius-md);
+  border: 1px solid var(--wd-border-medium);
+  transition: all var(--wd-transition-medium) ease;
+}
+
+.wd-neu-flat:hover {
+  background-color: var(--wd-bg-tertiary);
+}
+
+.wd-neu-pressed {
+  background-color: var(--wd-bg-secondary);
+  border-radius: var(--wd-radius-md);
+  border: 1px solid var(--wd-border-medium);
+  transition: all var(--wd-transition-medium) ease;
+}
+
+.wd-neu-concave {
+  background-color: var(--wd-bg-secondary);
+  border-radius: var(--wd-radius-md);
+  border: 1px solid var(--wd-border-medium);
+  transition: all var(--wd-transition-medium) ease;
+}
+
+.wd-neu-convex {
+  background-color: var(--wd-bg-secondary);
+  border-radius: var(--wd-radius-md);
+  border: 1px solid var(--wd-border-medium);
+  transition: all var(--wd-transition-medium) ease;
+}
+
+/* Status background colors */
+.wd-bg-success {
+  background-color: var(--wd-bg-success);
+  color: var(--wd-success-text);
+  border-color: var(--wd-success-border);
+}
+
+.wd-bg-warning {
+  background-color: var(--wd-bg-warning);
+  color: var(--wd-warning-text);
+  border-color: var(--wd-warning-border);
+}
+
+.wd-bg-danger {
+  background-color: var(--wd-bg-danger);
+  color: var(--wd-danger-text);
+  border-color: var(--wd-danger-border);
+}
+
+.wd-bg-info {
+  background-color: var(--wd-bg-info);
+  color: var(--wd-info-text);
+  border-color: var(--wd-info-border);
+}
+
+/* Text colors */
+.wd-text-primary {
+  color: var(--wd-text-primary);
+}
+
+.wd-text-secondary {
+  color: var(--wd-text-secondary);
+}
+
+.wd-text-muted {
+  color: var(--wd-text-muted);
+}
+
+.wd-text-accent {
+  color: var(--wd-text-accent);
+}
+
+/* Border utilities */
+.wd-border {
+  border: 1px solid var(--wd-border-medium);
+}
+
+.wd-border-light {
+  border-color: var(--wd-border-light);
+}
+
+.wd-border-dark {
+  border-color: var(--wd-border-dark);
+}
+
+/* Spacing utilities */
+.wd-p-0 { padding: 0; }
+.wd-p-1 { padding: var(--wd-spacing-xs); }
+.wd-p-2 { padding: var(--wd-spacing-sm); }
+.wd-p-3 { padding: var(--wd-spacing-md); }
+.wd-p-4 { padding: var(--wd-spacing-lg); }
+.wd-p-5 { padding: var(--wd-spacing-xl); }
+
+.wd-m-0 { margin: 0; }
+.wd-m-1 { margin: var(--wd-spacing-xs); }
+.wd-m-2 { margin: var(--wd-spacing-sm); }
+.wd-m-3 { margin: var(--wd-spacing-md); }
+.wd-m-4 { margin: var(--wd-spacing-lg); }
+.wd-m-5 { margin: var(--wd-spacing-xl); }
+
+/* Rounded corners */
+.wd-rounded-sm { border-radius: var(--wd-radius-sm); }
+.wd-rounded-md { border-radius: var(--wd-radius-md); }
+.wd-rounded-lg { border-radius: var(--wd-radius-lg); }
+.wd-rounded-xl { border-radius: var(--wd-radius-xl); }
+.wd-rounded-circle { border-radius: var(--wd-radius-circle); }
+
+/* Improved card styles for dark mode */
+.card {
+  background-color: var(--wd-bg-primary);
+  border-color: var(--wd-border-medium);
+  color: var(--wd-text-primary);
+}
+
+.card-header {
+  background-color: var(--wd-bg-secondary);
+  border-color: var(--wd-border-light);
+  color: var(--wd-text-primary);
+}
+
+.card-footer {
+  background-color: var(--wd-bg-secondary);
+  border-color: var(--wd-border-light);
+}
+
+/* Override bootstrap text classes for dark mode */
+.text-muted {
+  color: var(--wd-text-secondary) !important;
+}
+
+/* Fix form elements for dark mode */
+.form-control {
+  background-color: var(--wd-bg-primary);
+  border-color: var(--wd-border-medium);
+  color: var(--wd-text-primary);
+}
+
+.form-control:focus {
+  background-color: var(--wd-bg-primary);
+  color: var(--wd-text-primary);
+  border-color: var(--wd-text-accent);
+  box-shadow: 0 0 0 0.2rem rgba(38, 143, 255, 0.25);
+}
+
+.input-group-text {
+  background-color: var(--wd-bg-secondary);
+  border-color: var(--wd-border-medium);
+  color: var(--wd-text-secondary);
+}
+
+/* Flat styles for various elements (replacing neumorphic) */
+.wd-neu-input {
+  border: 1px solid var(--wd-border-medium);
+  background-color: var(--wd-bg-secondary);
+  border-radius: var(--wd-radius-md);
+  padding: 12px 15px;
+  width: 100%;
+  color: var(--wd-text-primary);
+  transition: all var(--wd-transition-medium) ease;
+}
+
+.wd-neu-input:focus {
+  outline: none;
+  border-color: var(--wd-text-accent);
+}
+
+/* Flat select */
+.wd-neu-select {
+  border: 1px solid var(--wd-border-medium);
+  background-color: var(--wd-bg-secondary);
+  border-radius: var(--wd-radius-md);
+  padding: 10px 15px;
+  width: 100%;
+  color: var(--wd-text-primary);
+  transition: all var(--wd-transition-medium) ease;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23495057' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 30px;
+}
+
+.wd-neu-select:focus {
+  outline: none;
+  border-color: var(--wd-text-accent);
+}
+
+/* Flat badges */
+.wd-neu-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 30px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background-color: var(--wd-bg-secondary);
+  color: var(--wd-text-primary);
+  border: 1px solid var(--wd-border-medium);
+}
+
+.wd-neu-badge-success {
+  background-color: var(--wd-bg-success);
+  color: var(--wd-success-text);
+}
+
+.wd-neu-badge-warning {
+  background-color: var(--wd-bg-warning);
+  color: var(--wd-warning-text);
+}
+
+.wd-neu-badge-danger {
+  background-color: var(--wd-bg-danger);
+  color: var(--wd-danger-text);
+}
+
+.wd-neu-badge-info {
+  background-color: var(--wd-bg-info);
+  color: var(--wd-info-text);
+}
+
+/* Loading animation inspired by challenge view */
+.wd-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.wd-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(0, 123, 255, 0.2);
+  border-radius: 50%;
+  border-top: 4px solid var(--wd-text-accent);
+  animation: wd-spinner 1s linear infinite;
+}
+
+.wd-loading-text {
+  margin-top: 15px;
+  color: var(--wd-text-primary);
+  font-weight: 600;
+}
+
+@keyframes wd-spinner {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Pulse animation */
+.wd-pulse {
+  animation: wd-pulse 2s infinite;
+}
+
+@keyframes wd-pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}

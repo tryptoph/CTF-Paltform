@@ -1,0 +1,318 @@
+/* Enhanced animations for Web Desktop Plugin */
+
+/* Smooth fade-in animation for elements */
+.wd-fade-in {
+  animation: wd-fadein 0.5s ease-in-out;
+}
+
+@keyframes wd-fadein {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Card hover animation */
+.wd-hover-rise {
+  transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.wd-hover-rise:hover {
+  transform: translateY(-5px);
+  border-color: var(--wd-text-accent);
+}
+
+/* Loading spinner animation - Inspired by challenge UI */
+.wd-spinner-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100px;
+}
+
+.wd-spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid rgba(0, 123, 255, 0.2);
+  border-radius: 50%;
+  border-top-color: var(--wd-text-accent);
+  animation: wd-spin 1s linear infinite;
+}
+
+@keyframes wd-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Progress bar animation */
+.wd-progress-container {
+  width: 350px;
+  height: 10px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 15px 0;
+  position: relative;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+.wd-progress-bar {
+  position: absolute;
+  height: 100%;
+  width: 0%;
+  background-color: #007bff;
+  border-radius: 10px;
+  animation: wd-progress 5s ease-in-out forwards;
+  background-image: linear-gradient(45deg, rgba(255, 255, 255, 0.2) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0.2) 75%, transparent 75%, transparent);
+  background-size: 30px 30px;
+  animation: wd-progress 5s ease-in-out forwards, wd-progress-stripes 1s linear infinite;
+}
+
+@keyframes wd-progress {
+  0% { width: 0%; }
+  20% { width: 20%; }
+  40% { width: 40%; }
+  60% { width: 60%; }
+  80% { width: 80%; }
+  100% { width: 100%; }
+}
+
+@keyframes wd-progress-stripes {
+  0% { background-position: 0 0; }
+  100% { background-position: 30px 0; }
+}
+
+/* Shimmer effect for loading states */
+.wd-shimmer {
+  background: linear-gradient(90deg,
+    var(--wd-bg-secondary) 0%,
+    var(--wd-bg-tertiary) 50%,
+    var(--wd-bg-secondary) 100%);
+  background-size: 200% 100%;
+  animation: wd-shimmer 1.5s infinite;
+}
+
+@keyframes wd-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Pulse animation for buttons and important elements */
+.wd-pulse {
+  animation: wd-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes wd-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+/* Shake animation for errors or warnings */
+.wd-shake {
+  animation: wd-shake 0.82s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+@keyframes wd-shake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
+}
+
+/* Bounce animation for success messages */
+.wd-bounce {
+  animation: wd-bounce 0.5s ease;
+}
+
+@keyframes wd-bounce {
+  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-20px); }
+  60% { transform: translateY(-10px); }
+}
+
+/* Slide-in from right animation */
+.wd-slide-in-right {
+  animation: wd-slideinright 0.5s forwards;
+}
+
+@keyframes wd-slideinright {
+  from { opacity: 0; transform: translateX(100%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* Slide-in from left animation */
+.wd-slide-in-left {
+  animation: wd-slideinleft 0.5s forwards;
+}
+
+@keyframes wd-slideinleft {
+  from { opacity: 0; transform: translateX(-100%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* Inspired by the challenge loading animation */
+.wd-challenge-loading {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  padding: 20px;
+}
+
+.wd-challenge-spinner {
+  width: 100px;
+  height: 100px;
+  border: 8px solid rgba(0, 123, 255, 0.15);
+  border-radius: 50%;
+  border-top: 8px solid var(--wd-text-accent);
+  animation: wd-challenge-spin 1s linear infinite;
+  box-shadow: 0 0 20px rgba(0, 123, 255, 0.3);
+}
+
+.wd-challenge-text {
+  margin-top: 20px;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 24px;
+  animation: wd-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  text-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+}
+
+.wd-challenge-status {
+  margin-top: 15px;
+  color: #6fc2ff;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+@keyframes wd-challenge-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Button transformation */
+.wd-btn-transform {
+  transition: transform 0.3s ease, background-color 0.3s ease;
+}
+
+.wd-btn-transform:hover {
+  transform: translateY(-3px);
+  background-color: var(--wd-bg-tertiary);
+}
+
+.wd-btn-transform:active {
+  transform: translateY(0);
+  background-color: var(--wd-bg-secondary);
+}
+
+/* Growing dots loading animation */
+.wd-loading-dots {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+}
+
+.wd-loading-dots span {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--wd-text-accent);
+  margin: 0 2px;
+  animation: wd-dots 1.4s ease-in-out infinite;
+}
+
+.wd-loading-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.wd-loading-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes wd-dots {
+  0%, 100% { transform: scale(0.8); opacity: 0.5; }
+  50% { transform: scale(1.2); opacity: 1; }
+}
+
+/* Progress steps animation */
+.wd-progress-steps {
+  display: flex;
+  justify-content: space-between;
+  margin: 20px 0;
+  position: relative;
+}
+
+.wd-progress-steps::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--wd-border-medium);
+  z-index: 1;
+}
+
+.wd-progress-step {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: var(--wd-bg-secondary);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+  border: 2px solid var(--wd-border-medium);
+  color: var(--wd-text-secondary);
+  transition: all 0.3s ease;
+}
+
+.wd-progress-step.active {
+  background-color: var(--wd-text-accent);
+  border-color: var(--wd-text-accent);
+  color: white;
+  animation: wd-pulse 2s infinite;
+}
+
+.wd-progress-step.complete {
+  background-color: var(--wd-success);
+  border-color: var(--wd-success);
+  color: white;
+}
+
+/* Wave animation - for loading/processing states */
+.wd-wave {
+  position: relative;
+  height: 60px;
+  width: 300px;
+  margin: 20px auto;
+  overflow: hidden;
+}
+
+.wd-wave-bg {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  background-color: var(--wd-bg-secondary);
+  border-radius: 10px;
+}
+
+.wd-wave-animation {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, transparent, var(--wd-text-accent), transparent);
+  animation: wd-wave-move 2s linear infinite;
+}
+
+@keyframes wd-wave-move {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}

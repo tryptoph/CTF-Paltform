@@ -2,7 +2,37 @@
 
 {% block stylesheets %}
 <link rel="stylesheet" href="{{ url_for('plugins.web_desktop.assets', path='css/webdesktop.css') }}">
+<link rel="stylesheet" href="{{ url_for('plugins.web_desktop.assets', path='css/custom_styles.css') }}">
 <style>
+    @keyframes challenge-spin {
+        to { transform: rotate(360deg); }
+    }
+
+    @keyframes progress {
+        0% { width: 0%; }
+        100% { width: 100%; }
+    }
+
+    @keyframes wd-progress {
+        0% { width: 0%; }
+        20% { width: 20%; }
+        40% { width: 40%; }
+        60% { width: 60%; }
+        80% { width: 80%; }
+        100% { width: 100%; }
+    }
+
+    @keyframes wd-progress-stripes {
+        0% { background-position: 0 0; }
+        100% { background-position: 30px 0; }
+    }
+
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.7; }
+        100% { opacity: 1; }
+    }
+
     .desktop-credentials {
         background-color: #fff3cd;
         border-radius: 5px;
@@ -51,17 +81,17 @@
         {% if container %}
         <div id="container-info" class="row justify-content-center">
             <div class="col-lg-8">
-                <div class="desktop-controls shadow-sm">
-                    <div class="desktop-header bg-primary text-white p-3 rounded">
+                <div class="desktop-controls card-neu">
+                    <div class="desktop-header bg-primary text-white p-3 rounded-top">
                         <img src="{{ url_for('plugins.web_desktop.assets', path='img/' + template_info.icon) if template_info else url_for('plugins.web_desktop.assets', path='img/desktop-icon.svg') }}"
                              alt="{% if template_info %}{{ template_info.name }}{% else %}Desktop Environment{% endif %}" class="desktop-header-icon">
                         <div>
                             <h3>{% if template_info %}{{ template_info.name }}{% elif container.challenge %}{{ container.challenge.name }}{% else %}Desktop Environment{% endif %}</h3>
-                            <span id="status-badge" class="status-badge status-running">Running</span>
+                            <span id="status-badge" class="status-badge status-running" style="background-color: #28a745; border: none; box-shadow: none;">Running</span>
                         </div>
                     </div>
 
-                    <div class="desktop-info-card shadow-sm">
+                    <div class="desktop-info-card wd-neu-flat">
                         <div class="desktop-info-item">
                             <i class="fas fa-clock text-primary"></i>
                             <div>
@@ -79,7 +109,14 @@
                                     {% set elapsed_seconds = (now - container.start_time).total_seconds()|int %}
                                     {% set remaining_seconds = timeout - elapsed_seconds %}
                                     {% if remaining_seconds > 0 %}
-                                        {{ (remaining_seconds / 60)|int }} minutes
+                                        {% set hours = (remaining_seconds // 3600)|int %}
+                                        {% set minutes = ((remaining_seconds % 3600) // 60)|int %}
+                                        {% set seconds = (remaining_seconds % 60)|int %}
+                                        {% if hours > 0 %}
+                                            {{ hours }}h {{ minutes }}m {{ seconds }}s
+                                        {% else %}
+                                            {{ minutes }}m {{ seconds }}s
+                                        {% endif %}
                                     {% else %}
                                         Expiring soon
                                     {% endif %}
@@ -98,7 +135,7 @@
                         <!-- Debug: Template info: {{ template_info }} -->
                         <!-- Debug: Docker image: {{ template_info.docker_image if template_info else 'None' }} -->
                         {% if template_info and (template_info.docker_image == "my-kali-desktop:1.14.0" or 'kali' in template_info.docker_image|lower) %}
-                        <div class="desktop-info-item desktop-credentials">
+                        <div class="desktop-info-item desktop-credentials wd-neu-flat">
                             <i class="fas fa-key text-danger"></i>
                             <div>
                                 <span class="info-label">Login Credentials</span>
@@ -109,12 +146,12 @@
                     </div>
 
                     {% if template_info and (template_info.docker_image == "my-kali-desktop:1.14.0" or 'kali' in template_info.docker_image|lower) %}
-                    <div class="desktop-info-card shadow-sm mt-3 challenge-info-card">
-                        <div class="card-header bg-info text-white">
-                            <i class="fas fa-info-circle mr-2"></i> Challenge Container Access
+                    <div class="desktop-info-card wd-neu-flat mt-3 challenge-info-card">
+                        <div class="card-header text-white" style="background-color: #007bff;">
+                            <i class="fas fa-info-circle mr-2" style="color: #ffcc00;"></i> <span style="color: #ffcc00;">Challenge Container Access</span>
                         </div>
                         <div class="card-body">
-                            <p>To access challenge containers from this desktop, use the following URL format:</p>
+                            <p style="color: #6fc2ff !important; font-weight: 500; font-size: 1.05em;" class="access-instructions">To access challenge containers from this desktop, use the following URL format:</p>
                             <div class="alert alert-dark">
                                 <code>http://challenge:[port]</code>
                             </div>
@@ -139,9 +176,9 @@
 
                     <div class="desktop-actions">
                         <a href="https://{{ config.get('web_desktop:domain', 'localhost') }}:{{ container.port }}"
-                           id="direct-launch-btn" class="btn btn-lg btn-success btn-block direct-launch-btn mb-3"
-                           data-url="https://{{ config.get('web_desktop:domain', 'localhost') }}:{{ container.port }}"
-                           target="_blank" style="font-size: 1.2rem; padding: 15px;">
+                        id="direct-launch-btn" class="btn btn-lg btn-success btn-block direct-launch-btn mb-3 wd-btn-transform btn-pulse"
+                        data-url="https://{{ config.get('web_desktop:domain', 'localhost') }}:{{ container.port }}"
+                        target="_blank" style="font-size: 1.2rem; padding: 15px; background: none; background-color: #ffffff; color: #007bff; border: 1px solid #007bff;">
                             <i class="fas fa-desktop mr-2"></i> Access Your Desktop
                         </a>
 
@@ -164,25 +201,22 @@
                         </div>
                     </div>
 
-                    <div class="alert alert-info mt-3 shadow-sm text-center">
-                        <i class="fas fa-info-circle mr-2"></i>
-                        Click the "Open in New Tab" button below to access your desktop.
-                    </div>
+
                 </div>
             </div>
         </div>
         {% else %}
         <div id="template-selection">
-            <div class="template-header text-center mb-4">
-                <h2><i class="fas fa-th-large mr-2"></i> Select a Desktop Environment</h2>
-                <p class="lead">Choose from the available templates below to launch your desktop</p>
+            <div class="template-header text-center mb-4 wd-fade-in" style="background-color: #1a2b47; border-radius: 12px; padding: 25px; box-shadow: none;">
+                <h2 class="text-white"><i class="fas fa-th-large mr-2"></i> Select a Desktop Environment</h2>
+                <p class="lead text-light">Choose from the available templates below to launch your desktop</p>
             </div>
 
-            <div class="row template-grid">
+            <div class="row template-grid wd-fade-in">
 
             {% for template in templates %}
             <div class="col-md-6 col-lg-4 mb-4">
-                <div class="card template-card h-100 {% if template.recommended %}border-primary{% endif %}">
+                <div class="card template-card h-100 {% if template.recommended %}border-primary{% endif %}" style="background-color: var(--wd-card-bg, #212529);">
                     <div class="card-header d-flex justify-content-between align-items-center {% if template.recommended %}bg-primary text-white{% endif %}">
                         <div class="template-title">
                             <img src="{{ url_for('plugins.web_desktop.assets', path='img/' + template.icon) }}"
@@ -191,7 +225,7 @@
                             {{ template.name }}
                         </div>
                         {% if template.recommended %}
-                        <span class="badge badge-light">Recommended</span>
+                        <span class="badge badge-light" style="background-color: #ffffff; color: #007bff; font-weight: bold; padding: 5px 10px; box-shadow: none; text-shadow: none;">Recommended</span>
                         {% endif %}
                     </div>
                     <div class="card-body d-flex flex-column">
@@ -206,20 +240,34 @@
                         <div class="template-specs mt-auto">
                             <div class="spec-item">
                                 <i class="fas fa-microchip text-muted"></i>
-                                <span><strong>CPU:</strong> {{ template.cpu_limit }}</span>
+                                <span style="color: #e2e5e9;"><strong style="color: #6fc2ff;">CPU:</strong> {{ template.cpu_limit }}</span>
                             </div>
                             <div class="spec-item">
                                 <i class="fas fa-memory text-muted"></i>
-                                <span><strong>Memory:</strong> {{ template.memory_limit }}</span>
+                                <span style="color: #e2e5e9;"><strong style="color: #6fc2ff;">Memory:</strong> {{ template.memory_limit }}</span>
                             </div>
                         </div>
                     </div>
                     <div class="card-footer text-center">
                         <form method="POST" action="{{ url_for('web_desktop.launch_desktop', template_id=template.id) }}">
                             <input type="hidden" name="nonce" value="{{ nonce }}">
-                            <button type="submit" class="btn btn-lg btn-primary btn-block launch-btn">
+                            <button type="submit" class="btn btn-lg btn-primary btn-block launch-btn wd-btn-transform" style="background: none; background-color: #ffffff; color: #007bff; font-weight: 600; letter-spacing: 0.5px; border: 1px solid #007bff;" onclick="this.disabled=true; this.innerHTML='<i class=\'fas fa-spinner fa-spin mr-2\'></i> Launching...';">
                                 <i class="fas fa-rocket mr-2"></i> Launch
                             </button>
+                            <script>
+                                // Ensure the button has a click handler
+                                document.addEventListener('DOMContentLoaded', function() {
+                                    const launchBtn = document.querySelector('.launch-btn');
+                                    if (launchBtn) {
+                                        console.log('Found launch button, adding click handler');
+                                        launchBtn.addEventListener('click', function() {
+                                            console.log('Launch button clicked');
+                                            this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Launching...';
+                                            this.disabled = true;
+                                        });
+                                    }
+                                });
+                            </script>
                         </form>
                     </div>
                 </div>
@@ -238,72 +286,183 @@
     </div>
 </div>
 
-<div id="loading-overlay" class="loading-overlay" style="display: none;">
-    <div class="spinner"></div>
-    <div id="loading-text">Loading...</div>
+<div id="loading-overlay" class="loading-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.9); z-index: 9999; justify-content: center; align-items: center; flex-direction: column;">
+    <div class="wd-challenge-spinner" style="display: inline-block; width: 100px; height: 100px; border: 6px solid rgba(255, 255, 255, 0.2); border-radius: 50%; border-top-color: #007bff; animation: challenge-spin 1s ease-in-out infinite; margin-bottom: 25px;"></div>
+    <div id="loading-text" class="wd-challenge-text" style="color: #fff; font-size: 24px; margin-bottom: 25px; font-weight: 600;">Preparing your desktop environment...</div>
+    <div id="loading-status" class="wd-challenge-status" style="color: #6fc2ff; font-size: 18px; margin-bottom: 25px;">Initializing...</div>
+    <div class="wd-progress-container mt-3" style="width: 350px; background-color: rgba(255, 255, 255, 0.2); border-radius: 10px; overflow: hidden; margin: 0 auto;">
+        <div id="loading-progress-bar" class="wd-progress-bar" style="height: 10px; width: 0%; background-color: #007bff; border-radius: 10px; background-image: linear-gradient(45deg, rgba(255, 255, 255, 0.2) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0.2) 75%, transparent 75%, transparent); background-size: 30px 30px;"></div>
+    </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
+<!-- Simple loading script for maximum reliability -->
+<script src="{{ url_for('plugins.web_desktop.assets', path='js/simple-loader.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Apply animations to elements on load
+    animateElementsOnLoad();
+
     // Initialize direct launch button
     const directLaunchBtn = document.getElementById('direct-launch-btn');
     if (directLaunchBtn) {
         directLaunchBtn.addEventListener('click', function(e) {
             // Show loading overlay when opening in new tab
             showLoading('Opening desktop in new tab...');
-            setTimeout(hideLoading, 1000); // Hide after 1 second
+            setTimeout(hideLoading, 1500); // Hide after 1.5 seconds
         });
     }
 
-    // Add loading overlay for form submissions
-    const forms = document.querySelectorAll('form');
-    forms.forEach(form => {
-        form.addEventListener('submit', function() {
-            const action = this.getAttribute('action');
-            if (action.includes('launch_desktop')) {
-                showLoading('Launching desktop environment...');
-            } else if (action.includes('renew_desktop')) {
-                showLoading('Renewing desktop time...');
-            } else if (action.includes('destroy_desktop')) {
-                showLoading('Destroying desktop...');
-            }
-        });
-    });
+    // Form submission is now handled by guaranteed-loader.js
+    // This code is disabled to avoid conflicts
+    console.log('Using guaranteed-loader.js for form submission with 15-second delay');
 
-    // Update time remaining counter
+    // Update time remaining counter with improved formatting including seconds
     const timeRemainingElement = document.getElementById('time-remaining');
     if (timeRemainingElement) {
-        let remainingMinutes = parseInt(timeRemainingElement.textContent);
-        if (!isNaN(remainingMinutes)) {
-            setInterval(function() {
-                if (remainingMinutes > 0) {
-                    remainingMinutes--;
-                    timeRemainingElement.textContent = remainingMinutes + ' minutes';
-                } else {
-                    timeRemainingElement.textContent = 'Expiring soon';
-                }
-            }, 60000); // Update every minute
+        console.log('Initial time display:', timeRemainingElement.textContent);
+
+        // Check if the container is already expired
+        if (timeRemainingElement.textContent.trim() === 'Expiring soon') {
+            console.log('Container is already expired or close to expiring');
+        } else {
+            // Update the time display immediately
+            updateRemainingTime(timeRemainingElement);
+
+            // Update every second instead of every minute
+            setInterval(() => updateRemainingTime(timeRemainingElement), 1000);
         }
+    } else {
+        console.log('Time remaining element not found');
     }
 });
 
 // Helper functions
+function animateElementsOnLoad() {
+    // Function now empty as animations are removed
+    // No animations to add
+}
+
+function updateRemainingTime(element) {
+    let text = element.textContent.trim();
+    let totalSeconds = 0;
+
+    // Check if the text is 'Expiring soon'
+    if (text === 'Expiring soon') {
+        // Already expiring, no need to update
+        element.parentElement.classList.add('text-danger');
+        return;
+    }
+
+    // Parse the current time display
+    if (text.includes('minutes')) {
+        // Format is like "59 minutes"
+        const minutes = parseInt(text);
+        totalSeconds = minutes * 60;
+    } else if (text.includes('h') && text.includes('m') && text.includes('s')) {
+        // Format is like "1h 30m 45s"
+        const parts = text.split(' ');
+        let hours = 0, minutes = 0, seconds = 0;
+
+        for (const part of parts) {
+            if (part.includes('h')) {
+                hours = parseInt(part);
+            } else if (part.includes('m')) {
+                minutes = parseInt(part);
+            } else if (part.includes('s')) {
+                seconds = parseInt(part);
+            }
+        }
+
+        totalSeconds = (hours * 3600) + (minutes * 60) + seconds;
+    } else if (text.includes('m') && text.includes('s')) {
+        // Format is like "30m 45s"
+        const parts = text.split(' ');
+        let minutes = 0, seconds = 0;
+
+        for (const part of parts) {
+            if (part.includes('m')) {
+                minutes = parseInt(part);
+            } else if (part.includes('s')) {
+                seconds = parseInt(part);
+            }
+        }
+
+        totalSeconds = (minutes * 60) + seconds;
+    }
+
+    // Decrement by 1 second
+    totalSeconds = totalSeconds - 1;
+
+    if (isNaN(totalSeconds) || totalSeconds <= 0) {
+        element.textContent = 'Expiring soon';
+        element.parentElement.classList.add('text-danger');
+    } else {
+        // Calculate hours, minutes, seconds
+        const hours = Math.floor(totalSeconds / 3600);
+        const remainingMinutes = Math.floor((totalSeconds % 3600) / 60);
+        const remainingSeconds = totalSeconds % 60;
+
+        // Format with hours, minutes, and seconds
+        if (hours > 0) {
+            element.textContent = `${hours}h ${remainingMinutes}m ${remainingSeconds}s`;
+        } else {
+            element.textContent = `${remainingMinutes}m ${remainingSeconds}s`;
+
+            // Add warning class when less than 10 minutes
+            if (remainingMinutes < 10) {
+                element.parentElement.classList.add('text-warning');
+            }
+        }
+
+        // Log the time for debugging
+        console.log(`Time remaining: ${element.textContent}`);
+    }
+}
+
+function updateLoadingText(message) {
+    const loadingText = document.getElementById('loading-text');
+    if (loadingText) {
+        // Add a fade effect
+        loadingText.style.opacity = '0';
+        setTimeout(() => {
+            loadingText.textContent = message;
+            loadingText.style.opacity = '1';
+        }, 300);
+    }
+}
+
 function showLoading(message) {
+    // This function is now simplified to avoid conflicts with guaranteed-loader.js
+    // It's only used for the direct launch button, not for form submissions
     const loadingOverlay = document.getElementById('loading-overlay');
     const loadingText = document.getElementById('loading-text');
 
     if (loadingOverlay && loadingText) {
-        loadingText.textContent = message;
         loadingOverlay.style.display = 'flex';
+        loadingText.textContent = message;
+        console.log('Simple loading overlay displayed: ' + message);
+    } else {
+        console.error('Loading overlay or text element not found');
     }
 }
 
 function hideLoading() {
+    // If we're in the middle of loading a desktop, don't hide the overlay
+    if (window.isLoadingDesktop) {
+        console.log('Loading desktop in progress, not hiding overlay');
+        return;
+    }
+
     const loadingOverlay = document.getElementById('loading-overlay');
     if (loadingOverlay) {
-        loadingOverlay.style.display = 'none';
+        // Fade out effect
+        loadingOverlay.style.opacity = '0';
+        setTimeout(() => {
+            loadingOverlay.style.display = 'none';
+            loadingOverlay.style.opacity = '1';
+        }, 300);
     }
 }
 
@@ -311,33 +470,220 @@ function showMessage(message, type) {
     const alertContainer = document.getElementById('alert-container');
     if (!alertContainer) return;
 
-    const alertHTML = `
-        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-            ${message}
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
+    // Remove any existing alerts
+    const existingAlerts = alertContainer.querySelectorAll('.alert');
+    existingAlerts.forEach(alert => {
+        if (alertContainer.contains(alert)) {
+            alertContainer.removeChild(alert);
+        }
+    });
+
+    // Create the new alert with animation
+    const alertElement = document.createElement('div');
+    alertElement.className = `alert alert-${type} alert-dismissible fade show wd-slide-in-right`;
+    alertElement.setAttribute('role', 'alert');
+    alertElement.innerHTML = `
+        ${message}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
     `;
 
-    alertContainer.innerHTML = alertHTML;
+    alertContainer.appendChild(alertElement);
 
     // Auto-dismiss after 5 seconds
     setTimeout(function() {
-        const alerts = alertContainer.querySelectorAll('.alert');
-        alerts.forEach(alert => {
-            try {
-                alert.classList.remove('show');
-                setTimeout(() => {
-                    if (alertContainer.contains(alert)) {
-                        alertContainer.removeChild(alert);
-                    }
-                }, 150);
-            } catch (error) {
-                console.error('Error removing alert:', error);
-            }
-        });
+        try {
+            alertElement.classList.add('wd-slide-in-left');
+            alertElement.classList.remove('show');
+            setTimeout(() => {
+                if (alertContainer.contains(alertElement)) {
+                    alertContainer.removeChild(alertElement);
+                }
+            }, 500);
+        } catch (error) {
+            console.error('Error removing alert:', error);
+        }
     }, 5000);
 }
+</script>
+
+<!-- Direct inline script to ensure loading animation works -->
+<script>
+console.log('Direct inline script loaded');
+
+// Find all launch forms
+const directLaunchForms = document.querySelectorAll('form[action*="launch_desktop"]');
+console.log('Found ' + directLaunchForms.length + ' launch forms (direct)');
+
+// Add event listeners to all forms
+directLaunchForms.forEach(form => {
+    console.log('Adding submit handler to form (direct)');
+    form.addEventListener('submit', function(e) {
+        console.log('Form submission intercepted (direct)');
+        e.preventDefault();
+
+        // Disable all buttons
+        const buttons = document.querySelectorAll('button');
+        buttons.forEach(btn => {
+            btn.disabled = true;
+            if (btn.classList.contains('launch-btn')) {
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Launching...';
+            }
+        });
+
+        // Create loading overlay
+        const overlay = document.createElement('div');
+        overlay.style.position = 'fixed';
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.width = '100%';
+        overlay.style.height = '100%';
+        overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
+        overlay.style.zIndex = '9999';
+        overlay.style.display = 'flex';
+        overlay.style.flexDirection = 'column';
+        overlay.style.justifyContent = 'center';
+        overlay.style.alignItems = 'center';
+        document.body.appendChild(overlay);
+
+        // Create spinner
+        const spinner = document.createElement('div');
+        spinner.style.width = '100px';
+        spinner.style.height = '100px';
+        spinner.style.border = '8px solid #444';
+        spinner.style.borderTop = '8px solid #007bff';
+        spinner.style.borderRadius = '50%';
+        spinner.style.marginBottom = '30px';
+        spinner.style.animation = 'spin 1s linear infinite';
+        overlay.appendChild(spinner);
+
+        // Create text
+        const text = document.createElement('div');
+        text.style.color = 'white';
+        text.style.fontSize = '24px';
+        text.style.fontWeight = 'bold';
+        text.style.marginBottom = '20px';
+        text.textContent = 'Preparing your desktop environment...';
+        overlay.appendChild(text);
+
+        // Create status text
+        const status = document.createElement('div');
+        status.style.color = '#6fc2ff';
+        status.style.fontSize = '18px';
+        status.style.marginBottom = '30px';
+        status.textContent = 'Initializing...';
+        overlay.appendChild(status);
+
+        // Create progress container
+        const progressContainer = document.createElement('div');
+        progressContainer.style.width = '400px';
+        progressContainer.style.height = '10px';
+        progressContainer.style.backgroundColor = '#333';
+        progressContainer.style.borderRadius = '5px';
+        progressContainer.style.overflow = 'hidden';
+        progressContainer.style.marginBottom = '20px';
+        overlay.appendChild(progressContainer);
+
+        // Create progress bar
+        const progressBar = document.createElement('div');
+        progressBar.style.width = '0%';
+        progressBar.style.height = '100%';
+        progressBar.style.backgroundColor = '#007bff';
+        progressContainer.appendChild(progressBar);
+
+        // Create countdown
+        const countdown = document.createElement('div');
+        countdown.style.color = '#aaa';
+        countdown.style.fontSize = '16px';
+        countdown.textContent = 'Time remaining: 30 seconds';
+        overlay.appendChild(countdown);
+
+        // Status messages
+        const messages = [
+            'Initializing...',
+            'Creating container...',
+            'Allocating resources...',
+            'Setting up environment...',
+            'Installing components...',
+            'Configuring network...',
+            'Starting desktop services...',
+            'Preparing user interface...',
+            'Almost ready...',
+            'Finalizing setup...'
+        ];
+
+        // Start time
+        const startTime = Date.now();
+        const duration = 30000; // 30 seconds
+
+        // Update progress and status
+        const interval = setInterval(() => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(100, (elapsed / duration) * 100);
+            const timeLeft = Math.max(0, Math.ceil((duration - elapsed) / 1000));
+
+            // Update progress bar
+            progressBar.style.width = progress + '%';
+
+            // Update countdown
+            countdown.textContent = `Time remaining: ${timeLeft} seconds`;
+
+            // Update status message
+            const messageIndex = Math.min(Math.floor(progress / 10), messages.length - 1);
+            status.textContent = messages[messageIndex];
+
+            // Check if complete
+            if (progress >= 100) {
+                clearInterval(interval);
+            }
+        }, 100);
+
+        // Submit form after delay - with more robust handling
+        setTimeout(() => {
+            console.log('Now submitting form after delay (direct)');
+            try {
+                // Create a completely new form with the same action and method
+                const newForm = document.createElement('form');
+                newForm.method = form.method;
+                newForm.action = form.action;
+
+                // Copy all form fields
+                const formData = new FormData(form);
+                formData.forEach((value, key) => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = key;
+                    input.value = value;
+                    newForm.appendChild(input);
+                });
+
+                // Log what we're about to submit
+                console.log('Submitting to:', newForm.action);
+                console.log('With method:', newForm.method);
+
+                // Add the form to the document and submit it
+                document.body.appendChild(newForm);
+                newForm.submit();
+
+                // Also try the original form as a fallback
+                setTimeout(() => {
+                    console.log('Fallback: submitting original form');
+                    form.submit();
+                }, 500);
+            } catch (error) {
+                console.error('Error during form submission:', error);
+                // Last resort - redirect to the form action URL
+                window.location.href = form.action;
+
+                // Ultimate fallback - reload the page after 2 more seconds
+                setTimeout(() => {
+                    console.log('Ultimate fallback: reloading page');
+                    window.location.reload();
+                }, 2000);
+            }
+        }, duration);
+    });
+});
 </script>
 {% endblock %}
