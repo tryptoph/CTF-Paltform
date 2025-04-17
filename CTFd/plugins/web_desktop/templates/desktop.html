@@ -1,9 +1,50 @@
 {% extends "base.html" %}
 
+<!-- Immediate script to hide loading overlay -->
+<script>
+    // Hide loading overlay as early as possible
+    window.addEventListener('load', function() {
+        var loadingOverlay = document.getElementById('loading-overlay');
+        if (loadingOverlay) {
+            loadingOverlay.style.display = 'none';
+            console.log('Hiding loading overlay on window load');
+        }
+    });
+
+    // Also try to hide it immediately
+    document.addEventListener('DOMContentLoaded', function() {
+        var loadingOverlay = document.getElementById('loading-overlay');
+        if (loadingOverlay) {
+            loadingOverlay.style.display = 'none';
+            console.log('Hiding loading overlay on DOMContentLoaded');
+        }
+    });
+</script>
+
 {% block stylesheets %}
 <link rel="stylesheet" href="{{ url_for('plugins.web_desktop.assets', path='css/webdesktop.css') }}">
 <link rel="stylesheet" href="{{ url_for('plugins.web_desktop.assets', path='css/custom_styles.css') }}">
 <style>
+    /* Hide loading overlay by default */
+    #loading-overlay {
+        display: none !important;
+    }
+
+    /* Improved text colors for dark backgrounds */
+    .desktop-info-card {
+        background-color: rgba(0, 0, 0, 0.2) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    }
+
+    .info-label {
+        font-weight: bold !important;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+    }
+
+    .info-value {
+        color: #ffffff !important;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+    }
     @keyframes challenge-spin {
         to { transform: rotate(360deg); }
     }
@@ -93,18 +134,18 @@
 
                     <div class="desktop-info-card wd-neu-flat">
                         <div class="desktop-info-item">
-                            <i class="fas fa-clock text-primary"></i>
+                            <i class="fas fa-clock" style="color: #00c8ff;"></i>
                             <div>
-                                <span class="info-label">Started</span>
-                                <span class="info-value">{{ container.start_time.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                                <span class="info-label" style="color: #00c8ff; font-weight: bold;">Started</span>
+                                <span class="info-value" style="color: #ffffff;">{{ container.start_time.strftime('%Y-%m-%d %H:%M:%S') }}</span>
                             </div>
                         </div>
 
                         <div class="desktop-info-item">
-                            <i class="fas fa-hourglass-half text-warning"></i>
+                            <i class="fas fa-hourglass-half" style="color: #ffcc00;"></i>
                             <div>
-                                <span class="info-label">Time Remaining</span>
-                                <span class="info-value" id="time-remaining">
+                                <span class="info-label" style="color: #ffcc00; font-weight: bold;">Time Remaining</span>
+                                <span class="info-value" id="time-remaining" style="color: #ffffff;">
                                     {% set timeout = config.get('web_desktop:docker_timeout', 3600)|int %}
                                     {% set elapsed_seconds = (now - container.start_time).total_seconds()|int %}
                                     {% set remaining_seconds = timeout - elapsed_seconds %}
@@ -125,21 +166,24 @@
                         </div>
 
                         <div class="desktop-info-item">
-                            <i class="fas fa-sync text-info"></i>
+                            <i class="fas fa-sync" style="color: #00ff9d;"></i>
                             <div>
-                                <span class="info-label">Renewals</span>
-                                <span class="info-value">{{ container.renew_count }} / {{ config.get('web_desktop:docker_max_renew_count', 5) }}</span>
+                                <span class="info-label" style="color: #00ff9d; font-weight: bold;">Renewals</span>
+                                <span class="info-value" style="color: #ffffff;">{{ container.renew_count }} / {{ config.get('web_desktop:docker_max_renew_count', 5) }}</span>
                             </div>
                         </div>
 
                         <!-- Debug: Template info: {{ template_info }} -->
                         <!-- Debug: Docker image: {{ template_info.docker_image if template_info else 'None' }} -->
                         {% if template_info and (template_info.docker_image == "my-kali-desktop:1.14.0" or 'kali' in template_info.docker_image|lower) %}
-                        <div class="desktop-info-item desktop-credentials wd-neu-flat">
-                            <i class="fas fa-key text-danger"></i>
+                        <div class="desktop-info-item desktop-credentials wd-neu-flat" style="background-color: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.15); padding: 12px; border-radius: 8px;">
+                            <i class="fas fa-key" style="color: #ff5f5f;"></i>
                             <div>
-                                <span class="info-label">Login Credentials</span>
-                                <span class="info-value">Username: <strong>kasm_user</strong> / Password: <strong>password</strong></span>
+                                <span class="info-label" style="color: #ff5f5f; font-weight: bold;">Login Credentials</span>
+                                <span class="info-value" style="color: #ffffff;">
+                                    Username: <strong style="color: #00ffcc; background-color: rgba(0, 0, 0, 0.3); padding: 2px 6px; border-radius: 4px;">kasm_user</strong> /
+                                    Password: <strong style="color: #00ffcc; background-color: rgba(0, 0, 0, 0.3); padding: 2px 6px; border-radius: 4px;">password</strong>
+                                </span>
                             </div>
                         </div>
                         {% endif %}
@@ -147,27 +191,26 @@
 
                     {% if template_info and (template_info.docker_image == "my-kali-desktop:1.14.0" or 'kali' in template_info.docker_image|lower) %}
                     <div class="desktop-info-card wd-neu-flat mt-3 challenge-info-card">
-                        <div class="card-header text-white" style="background-color: #007bff;">
-                            <i class="fas fa-info-circle mr-2" style="color: #ffcc00;"></i> <span style="color: #ffcc00;">Challenge Container Access</span>
+                        <div class="card-header text-white" style="background-color: #00366e; border-bottom: 2px solid #00a8ff; padding: 12px;">
+                            <i class="fas fa-info-circle mr-2" style="color: #00ffff;"></i> <span style="color: #00ffff; font-weight: bold; font-size: 1.1em;">Challenge Container Access</span>
                         </div>
                         <div class="card-body">
                             <p style="color: #6fc2ff !important; font-weight: 500; font-size: 1.05em;" class="access-instructions">To access challenge containers from this desktop, use the following URL format:</p>
-                            <div class="alert alert-dark">
-                                <code>http://challenge:[port]</code>
+                            <div class="alert" style="background-color: rgba(0, 0, 0, 0.3); border: 1px solid #6fc2ff; border-radius: 8px;">
+                                <code style="background-color: rgba(0, 0, 0, 0.4); color: #00ffcc; padding: 6px 12px; border-radius: 4px; font-size: 1.1em;">http://challenge:[port]</code>
                             </div>
 
                             {% if challenge_container and challenge_container.port %}
-                            <div class="alert alert-success">
-                                <i class="fas fa-check-circle mr-2"></i> You have an active challenge container!
-                                <div class="mt-2">
-                                    <strong>Access URL:</strong> <code>http://challenge:{% if challenge_container.internal_port %}{{ challenge_container.internal_port }}{% else %}{{ challenge_container.port }}{% endif %}</code>
+                            <div class="alert" style="background-color: #003b00; border: 1px solid #00ff44; color: #00ff44; border-radius: 8px;">
+                                <i class="fas fa-check-circle mr-2" style="color: #00ff44;"></i> <span style="font-weight: bold; color: #00ff44;">You have an active challenge container!</span>
+                                <div class="mt-2" style="color: #ffffff;">
+                                    <strong style="color: #00ffcc;">Access URL:</strong> <code style="background-color: rgba(0, 0, 0, 0.3); color: #00ffcc; padding: 4px 8px; border-radius: 4px;">http://challenge:{% if challenge_container.internal_port %}{{ challenge_container.internal_port }}{% else %}{{ challenge_container.port }}{% endif %}</code>
                                 </div>
-
                             </div>
                             {% else %}
-                            <div class="alert alert-warning">
-                                <i class="fas fa-exclamation-triangle mr-2"></i> No active challenge containers found.
-                                <div class="mt-2">Launch a challenge from the Challenges page to get started.</div>
+                            <div class="alert" style="background-color: #2d2000; border: 1px solid #ffcc00; color: #ffcc00; border-radius: 8px;">
+                                <i class="fas fa-exclamation-triangle mr-2" style="color: #ffcc00;"></i> <span style="font-weight: bold; color: #ffcc00;">No active challenge containers found.</span>
+                                <div class="mt-2" style="color: #ffffff;">Launch a challenge from the Challenges page to get started.</div>
                             </div>
                             {% endif %}
                         </div>
@@ -286,13 +329,22 @@
     </div>
 </div>
 
-<div id="loading-overlay" class="loading-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.9); z-index: 9999; justify-content: center; align-items: center; flex-direction: column;">
+<div id="loading-overlay" class="loading-overlay" style="display: none !important; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.9); z-index: 9999; justify-content: center; align-items: center; flex-direction: column;">
+    <script>document.getElementById('loading-overlay').style.display = 'none';</script>
     <div class="wd-challenge-spinner" style="display: inline-block; width: 100px; height: 100px; border: 6px solid rgba(255, 255, 255, 0.2); border-radius: 50%; border-top-color: #007bff; animation: challenge-spin 1s ease-in-out infinite; margin-bottom: 25px;"></div>
     <div id="loading-text" class="wd-challenge-text" style="color: #fff; font-size: 24px; margin-bottom: 25px; font-weight: 600;">Preparing your desktop environment...</div>
     <div id="loading-status" class="wd-challenge-status" style="color: #6fc2ff; font-size: 18px; margin-bottom: 25px;">Initializing...</div>
     <div class="wd-progress-container mt-3" style="width: 350px; background-color: rgba(255, 255, 255, 0.2); border-radius: 10px; overflow: hidden; margin: 0 auto;">
         <div id="loading-progress-bar" class="wd-progress-bar" style="height: 10px; width: 0%; background-color: #007bff; border-radius: 10px; background-image: linear-gradient(45deg, rgba(255, 255, 255, 0.2) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0.2) 75%, transparent 75%, transparent); background-size: 30px 30px;"></div>
     </div>
+
+    <!-- Debug information (only visible to admins) -->
+    {% if is_admin() %}
+    <div id="debug-info" style="margin-top: 30px; background-color: rgba(0, 0, 0, 0.7); padding: 15px; border-radius: 5px; max-width: 80%; max-height: 200px; overflow-y: auto; text-align: left;">
+        <h5 style="color: #ff9800; margin-bottom: 10px;">Debug Information (Admin Only)</h5>
+        <div id="debug-log" style="color: #aaa; font-family: monospace; font-size: 12px;">Waiting for debug information...</div>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}
 
@@ -301,6 +353,13 @@
 <script src="{{ url_for('plugins.web_desktop.assets', path='js/simple-loader.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Make sure loading overlay is hidden on page load
+    const loadingOverlay = document.getElementById('loading-overlay');
+    if (loadingOverlay) {
+        loadingOverlay.setAttribute('style', 'display: none !important; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.9); z-index: 9999; justify-content: center; align-items: center; flex-direction: column;');
+        console.log('Hiding loading overlay on page load');
+    }
+
     // Apply animations to elements on load
     animateElementsOnLoad();
 
@@ -351,7 +410,8 @@ function updateRemainingTime(element) {
     // Check if the text is 'Expiring soon'
     if (text === 'Expiring soon') {
         // Already expiring, no need to update
-        element.parentElement.classList.add('text-danger');
+        element.style.color = '#ff4d4d'; // Bright red
+        element.parentElement.querySelector('.info-label').style.color = '#ff4d4d';
         return;
     }
 
@@ -397,7 +457,8 @@ function updateRemainingTime(element) {
 
     if (isNaN(totalSeconds) || totalSeconds <= 0) {
         element.textContent = 'Expiring soon';
-        element.parentElement.classList.add('text-danger');
+        element.style.color = '#ff4d4d'; // Bright red
+        element.parentElement.querySelector('.info-label').style.color = '#ff4d4d';
     } else {
         // Calculate hours, minutes, seconds
         const hours = Math.floor(totalSeconds / 3600);
@@ -407,12 +468,22 @@ function updateRemainingTime(element) {
         // Format with hours, minutes, and seconds
         if (hours > 0) {
             element.textContent = `${hours}h ${remainingMinutes}m ${remainingSeconds}s`;
+            element.style.color = '#ffffff'; // White
         } else {
             element.textContent = `${remainingMinutes}m ${remainingSeconds}s`;
 
-            // Add warning class when less than 10 minutes
-            if (remainingMinutes < 10) {
-                element.parentElement.classList.add('text-warning');
+            // Change color based on remaining time
+            if (remainingMinutes < 5) {
+                // Less than 5 minutes - red
+                element.style.color = '#ff4d4d';
+                element.parentElement.querySelector('.info-label').style.color = '#ff4d4d';
+            } else if (remainingMinutes < 10) {
+                // Less than 10 minutes - orange
+                element.style.color = '#ffaa00';
+                element.parentElement.querySelector('.info-label').style.color = '#ffaa00';
+            } else {
+                // More than 10 minutes - white
+                element.style.color = '#ffffff';
             }
         }
 
@@ -440,7 +511,8 @@ function showLoading(message) {
     const loadingText = document.getElementById('loading-text');
 
     if (loadingOverlay && loadingText) {
-        loadingOverlay.style.display = 'flex';
+        // Force display style to override the !important
+        loadingOverlay.setAttribute('style', 'display: flex !important; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.9); z-index: 9999; justify-content: center; align-items: center; flex-direction: column;');
         loadingText.textContent = message;
         console.log('Simple loading overlay displayed: ' + message);
     } else {
@@ -460,8 +532,8 @@ function hideLoading() {
         // Fade out effect
         loadingOverlay.style.opacity = '0';
         setTimeout(() => {
-            loadingOverlay.style.display = 'none';
-            loadingOverlay.style.opacity = '1';
+            // Force display style to override the !important
+            loadingOverlay.setAttribute('style', 'display: none !important; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.9); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; opacity: 1;');
         }, 300);
     }
 }
