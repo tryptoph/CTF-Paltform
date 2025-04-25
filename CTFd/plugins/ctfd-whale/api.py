@@ -101,19 +101,32 @@ class UserContainers(Resource):
         if not container:
             return {'success': True, 'data': {}}
         timeout = int(get_config("whale:docker_timeout", "3600"))
+        # Check if the container is for the requested challenge
         if container_type == 'challenge' and int(container.challenge_id) != int(challenge_id):
+            # Container exists but for a different challenge
+            print(f"Container exists but for different challenge: {container.challenge_id} vs requested {challenge_id}")
+            # Return a special response indicating a container exists for another challenge
+            # This will cause the frontend to show the launch button instead of container info
             return {
-                'success': False,
-                'message': f'Container started but not from this challenge ({container.challenge_id})'
+                'success': True,
+                'data': {},
+                'container_exists_elsewhere': True,
+                'other_challenge_id': container.challenge_id
             }
+        response_data = {
+            'lan_domain': str(user_id) + "-" + container.uuid,
+            'user_access': container.user_access,
+            'remaining_time': timeout - (datetime.now() - container.start_time).seconds,
+            'port': container.port,  # Include the port in the API response
+            'challenge_id': container.challenge_id  # Include the actual challenge ID
+        }
+
+        # We don't need to handle different challenges anymore
+        # since we're returning early for those cases
+
         return {
             'success': True,
-            'data': {
-                'lan_domain': str(user_id) + "-" + container.uuid,
-                'user_access': container.user_access,
-                'remaining_time': timeout - (datetime.now() - container.start_time).seconds,
-                'port': container.port  # Include the port in the API response
-            }
+            'data': response_data
         }
 
     @staticmethod
@@ -124,8 +137,11 @@ class UserContainers(Resource):
         user_id = current_user.get_current_user().id
         container_type = request.args.get('container_type', 'challenge')
 
-        # Remove existing container of the same type
-        ControlUtil.try_remove_container(user_id, container_type)
+        # Check if user already has a container
+        existing_container = DBContainer.get_current_containers(user_id=user_id, container_type=container_type)
+        if existing_container:
+            # Don't remove existing container, instead abort with a message
+            abort(403, f'You already have a container running for challenge #{existing_container.challenge_id}')
 
         current_count = DBContainer.get_all_alive_container_count()
         if int(get_config("whale:docker_max_container_count")) <= int(current_count):

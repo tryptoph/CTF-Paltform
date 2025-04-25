@@ -69,7 +69,7 @@ class ControlUtil:
             template = DesktopTemplate.query.filter_by(id=template_id).first()
             if not template:
                 return False, 'Invalid template'
-                
+
             # Ensure the user network exists first
             try:
                 # Import docker module and DockerUtils directly
@@ -78,20 +78,20 @@ class ControlUtil:
                 docker_types = importlib.import_module('docker.types')
                 cache_provider = importlib.import_module('CTFd.plugins.ctfd-whale.utils.cache')
                 CacheProvider = cache_provider.CacheProvider
-                
+
                 # Check if user network exists
                 network_name = f'user-{user_id}-network'
                 client = DockerUtils.client
                 networks = client.networks.list(names=[network_name])
-                
+
                 if not networks:
                     current_app.logger.info(f"[Web Desktop] User network not found. Creating network {network_name}")
-                    
+
                     # Get a network range from the cache
                     range_prefix = CacheProvider(app=current_app).get_available_network_range()
                     ipam_pool = docker_types.IPAMPool(subnet=range_prefix)
                     ipam_config = docker_types.IPAMConfig(driver='default', pool_configs=[ipam_pool])
-                    
+
                     # Create the network explicitly before trying to create the container
                     network = client.networks.create(
                         network_name,
@@ -149,7 +149,7 @@ class ControlUtil:
             max_retries = 3
             last_error = None
             success = False
-            
+
             while retry_count < max_retries and not success:
                 try:
                     result, message = WhaleControlUtil.try_add_container(user_id, challenge.id, container_type="desktop")
@@ -168,12 +168,12 @@ class ControlUtil:
                                 docker_types = importlib.import_module('docker.types')
                                 cache_provider = importlib.import_module('CTFd.plugins.ctfd-whale.utils.cache')
                                 CacheProvider = cache_provider.CacheProvider
-                                
+
                                 # Force network cleanup and recreation
                                 network_name = f'user-{user_id}-network'
                                 client = DockerUtils.client
                                 networks = client.networks.list(names=[network_name])
-                                
+
                                 # Remove any existing network with that name
                                 for network in networks:
                                     try:
@@ -181,12 +181,12 @@ class ControlUtil:
                                         current_app.logger.info(f"[Web Desktop] Removed problematic network {network_name}")
                                     except Exception:
                                         pass
-                                
+
                                 # Create a new network
                                 range_prefix = CacheProvider(app=current_app).get_available_network_range()
                                 ipam_pool = docker_types.IPAMPool(subnet=range_prefix)
                                 ipam_config = docker_types.IPAMConfig(driver='default', pool_configs=[ipam_pool])
-                                
+
                                 network = client.networks.create(
                                     network_name,
                                     internal=True,
@@ -199,19 +199,19 @@ class ControlUtil:
                                 current_app.logger.info(f"[Web Desktop] Successfully recreated network {network_name}")
                             except Exception as network_err:
                                 current_app.logger.error(f"[Web Desktop] Failed to fix network: {str(network_err)}")
-                        
+
                         last_error = message
                 except Exception as container_err:
                     current_app.logger.error(f"[Web Desktop] Error in container creation (attempt {retry_count+1}/{max_retries}): {str(container_err)}")
                     last_error = str(container_err)
-                
+
                 # Increment retry counter
                 retry_count += 1
                 if retry_count < max_retries and not success:
                     # Wait briefly before retrying
                     import time
                     time.sleep(1.5)
-            
+
             # Check if we succeeded after retries
             if not success:
                 if "network" in str(last_error).lower():
@@ -395,10 +395,15 @@ class ControlUtil:
                 # Fallback: Simply check if the container exists in database
                 # If it exists, assume it's running (best effort)
                 if whale_container:
-                    # Check if the container was recently created (within last 30 seconds)
-                    if (datetime.datetime.now() - whale_container.start_time).total_seconds() < 30:
+                    # Get the time since container creation
+                    time_since_creation = (datetime.datetime.now() - whale_container.start_time).total_seconds()
+
+                    # Check if the container was recently created (within last 60 seconds)
+                    if time_since_creation < 60:
+                        current_app.logger.info(f"[Web Desktop] Container is starting (created {time_since_creation:.1f} seconds ago)")
                         return 'starting'
                     else:
+                        current_app.logger.info(f"[Web Desktop] Container assumed running (created {time_since_creation:.1f} seconds ago)")
                         return 'running'
                 else:
                     return 'stopped'

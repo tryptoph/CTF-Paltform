@@ -388,7 +388,7 @@ def load(app):
             name = request.form.get('name')
             description = request.form.get('description', '')
             docker_image = request.form.get('docker_image')
-            memory_limit = request.form.get('memory_limit', '2048m')
+            memory_limit = request.form.get('memory_limit', '512m')
             cpu_limit = float(request.form.get('cpu_limit', 2.0))
             desktop_port = int(request.form.get('desktop_port', 6901))
             is_enabled = request.form.get('is_enabled') == 'on'

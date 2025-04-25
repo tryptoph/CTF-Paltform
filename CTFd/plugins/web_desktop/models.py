@@ -28,7 +28,7 @@ class DesktopTemplate(db.Model):
     name = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text)
     docker_image = db.Column(db.String(255), nullable=False)
-    memory_limit = db.Column(db.String(20), default="2048m")
+    memory_limit = db.Column(db.String(20), default="512m")
     cpu_limit = db.Column(db.Float, default=2.0)
     desktop_port = db.Column(db.Integer, default=6901)
     is_enabled = db.Column(db.Boolean, default=True)

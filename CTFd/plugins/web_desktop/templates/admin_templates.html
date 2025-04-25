@@ -160,8 +160,8 @@
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label for="memory_limit">Memory Limit</label>
-                                <input type="text" class="form-control wd-neu-input" id="memory_limit" name="memory_limit" value="2048m">
-                                <small class="form-text text-muted">Memory limit (e.g., 2048m, 4g)</small>
+                                <input type="text" class="form-control wd-neu-input" id="memory_limit" name="memory_limit" value="512m">
+                                <small class="form-text text-muted">Memory limit (e.g., 512m, 1g)</small>
                             </div>
                         </div>
                         <div class="col-md-4">
@@ -353,7 +353,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Apply animations on load
     applyAnimations();
-    
+
     // Edit template button click handler
     const editButtons = document.querySelectorAll('.edit-template-btn');
     editButtons.forEach(button => {
@@ -396,7 +396,7 @@ document.addEventListener('DOMContentLoaded', function() {
             updateTemplate(templateId, new FormData(editForm));
         });
     }
-    
+
     // Add template form submit handler
     const addForm = document.getElementById('add-template-form');
     if (addForm) {
@@ -405,7 +405,7 @@ document.addEventListener('DOMContentLoaded', function() {
             showLoading('Creating new template...');
         });
     }
-    
+
     // Apply visual effects and animations
     function applyAnimations() {
         // Add staggered fade-in to template cards
@@ -414,14 +414,14 @@ document.addEventListener('DOMContentLoaded', function() {
             card.style.animationDelay = (index * 0.1) + 's';
             card.classList.add('wd-fade-in');
         });
-        
+
         // Add subtle pulse to recommended templates
         const recommendedBadges = document.querySelectorAll('.badge-success');
         recommendedBadges.forEach(badge => {
             badge.classList.add('wd-pulse');
         });
     }
-    
+
     // Loading overlay functions
     function showLoading(message) {
         // Create loading overlay if it doesn't exist
@@ -441,9 +441,9 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             document.getElementById('loading-text').textContent = message;
         }
-        
+
         loadingOverlay.style.display = 'flex';
-        
+
         // Reset progress bar animation
         const progressBar = loadingOverlay.querySelector('.wd-progress-bar');
         if (progressBar) {
@@ -452,7 +452,7 @@ document.addEventListener('DOMContentLoaded', function() {
             progressBar.style.animation = 'wd-progress 8s ease-in-out forwards';
         }
     }
-    
+
     function hideLoading() {
         const loadingOverlay = document.getElementById('loading-overlay');
         if (loadingOverlay) {
@@ -538,7 +538,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 'Content-Type': 'application/json',
                 'CSRF-Token': csrfNonce,
                 'X-CSRF-Token': csrfNonce,
-                'Nonce': csrfNonce 
+                'Nonce': csrfNonce
             },
             body: JSON.stringify(data)
         })
@@ -602,29 +602,29 @@ document.addEventListener('DOMContentLoaded', function() {
             showNotification('Error deleting template', 'danger');
         });
     }
-    
+
     // Function to show beautiful notification
     function showNotification(message, type) {
         const tabContent = document.querySelector('.tab-content');
         if (!tabContent) return;
-        
+
         // Remove any existing notifications
         const existingAlerts = document.querySelectorAll('.alert');
         existingAlerts.forEach(alert => {
             alert.remove();
         });
-        
+
         // Create a new notification
         const alertDiv = document.createElement('div');
         alertDiv.className = `alert alert-${type} alert-dismissible fade show wd-slide-in-right`;
         alertDiv.setAttribute('role', 'alert');
-        
+
         // Add icon based on type
         let icon = 'info-circle';
         if (type === 'success') icon = 'check-circle';
         if (type === 'danger') icon = 'exclamation-triangle';
         if (type === 'warning') icon = 'exclamation-circle';
-        
+
         alertDiv.innerHTML = `
             <i class="fas fa-${icon} mr-2"></i>
             <strong>${type === 'success' ? 'Success!' : type === 'danger' ? 'Error!' : 'Notice!'}</strong> ${message}
@@ -632,10 +632,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 <span aria-hidden="true">&times;</span>
             </button>
         `;
-        
+
         // Insert at the top of the tab content
         tabContent.insertBefore(alertDiv, tabContent.firstChild);
-        
+
         // Auto-dismiss after 5 seconds
         setTimeout(() => {
             alertDiv.classList.add('wd-slide-in-left');

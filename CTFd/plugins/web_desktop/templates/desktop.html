@@ -54,18 +54,28 @@
         100% { width: 100%; }
     }
 
-    @keyframes wd-progress {
-        0% { width: 0%; }
-        20% { width: 20%; }
-        40% { width: 40%; }
-        60% { width: 60%; }
-        80% { width: 80%; }
-        100% { width: 100%; }
-    }
+    /* Removed wd-progress animation */
 
     @keyframes wd-progress-stripes {
         0% { background-position: 0 0; }
         100% { background-position: 30px 0; }
+    }
+
+    /* Classes for progress bar states */
+    .progress-complete {
+        width: 100% !important;
+        background-color: #28a745 !important;
+        animation: none !important;
+        transition: width 2s ease-in-out !important;
+        transition-delay: 0.5s !important;
+    }
+
+    .progress-error {
+        width: 100% !important;
+        background-color: #dc3545 !important;
+        animation: none !important;
+        transition: width 2s ease-in-out !important;
+        transition-delay: 0.5s !important;
     }
 
     @keyframes pulse {
@@ -334,8 +344,12 @@
     <div class="wd-challenge-spinner" style="display: inline-block; width: 100px; height: 100px; border: 6px solid rgba(255, 255, 255, 0.2); border-radius: 50%; border-top-color: #007bff; animation: challenge-spin 1s ease-in-out infinite; margin-bottom: 25px;"></div>
     <div id="loading-text" class="wd-challenge-text" style="color: #fff; font-size: 24px; margin-bottom: 25px; font-weight: 600;">Preparing your desktop environment...</div>
     <div id="loading-status" class="wd-challenge-status" style="color: #6fc2ff; font-size: 18px; margin-bottom: 25px;">Initializing...</div>
-    <div class="wd-progress-container mt-3" style="width: 350px; background-color: rgba(255, 255, 255, 0.2); border-radius: 10px; overflow: hidden; margin: 0 auto;">
-        <div id="loading-progress-bar" class="wd-progress-bar" style="height: 10px; width: 0%; background-color: #007bff; border-radius: 10px; background-image: linear-gradient(45deg, rgba(255, 255, 255, 0.2) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0.2) 75%, transparent 75%, transparent); background-size: 30px 30px;"></div>
+
+    <!-- New simple progress bar -->
+    <div class="progress-container" style="width: 350px; height: 30px; background-color: #222; border-radius: 15px; padding: 5px; margin: 0 auto; box-shadow: 0 0 10px rgba(0,0,0,0.5);">
+        <div id="simple-progress-bar" style="width: 0%; height: 100%; background-color: #28a745; border-radius: 10px; transition: none; position: relative;">
+            <span id="progress-percentage" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.7);">0%</span>
+        </div>
     </div>
 
     <!-- Debug information (only visible to admins) -->
@@ -492,31 +506,30 @@ function updateRemainingTime(element) {
     }
 }
 
-function updateLoadingText(message) {
-    const loadingText = document.getElementById('loading-text');
-    if (loadingText) {
-        // Add a fade effect
-        loadingText.style.opacity = '0';
-        setTimeout(() => {
-            loadingText.textContent = message;
-            loadingText.style.opacity = '1';
-        }, 300);
-    }
-}
-
 function showLoading(message) {
     // This function is now simplified to avoid conflicts with guaranteed-loader.js
     // It's only used for the direct launch button, not for form submissions
     const loadingOverlay = document.getElementById('loading-overlay');
     const loadingText = document.getElementById('loading-text');
+    const progressBar = document.getElementById('loading-progress-bar');
 
-    if (loadingOverlay && loadingText) {
+    if (loadingOverlay) {
         // Force display style to override the !important
         loadingOverlay.setAttribute('style', 'display: flex !important; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.9); z-index: 9999; justify-content: center; align-items: center; flex-direction: column;');
-        loadingText.textContent = message;
-        console.log('Simple loading overlay displayed: ' + message);
+
+        // Set the loading message
+        if (loadingText && message) {
+            loadingText.textContent = message;
+        }
+
+        // Reset progress bar
+        if (progressBar) {
+            progressBar.style.width = '20%'; // Start at 20% to make it more visible immediately
+        }
+
+        console.log('Loading overlay displayed with message:', message || 'No message provided');
     } else {
-        console.error('Loading overlay or text element not found');
+        console.error('Loading overlay not found');
     }
 }
 

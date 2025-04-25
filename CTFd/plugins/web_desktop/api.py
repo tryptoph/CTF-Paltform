@@ -182,7 +182,7 @@ class AdminTemplateList(Resource):
             name=data.get('name'),
             description=data.get('description', ''),
             docker_image=data.get('docker_image'),
-            memory_limit=data.get('memory_limit', '2048m'),
+            memory_limit=data.get('memory_limit', '512m'),
             cpu_limit=float(data.get('cpu_limit', 2.0)),
             desktop_port=int(data.get('desktop_port', 6901)),
             is_enabled=bool(data.get('is_enabled', True)),

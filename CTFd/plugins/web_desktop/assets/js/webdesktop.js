@@ -25,24 +25,46 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Destroy button
+    // Destroy button - initially disabled with a delay
     const destroyBtn = document.getElementById('destroy-desktop-btn');
     if (destroyBtn) {
-        destroyBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            if (confirm('Are you sure you want to destroy this desktop? All unsaved data will be lost.')) {
-                destroyDesktop();
-            }
-        });
+        // Initially disable the button and enable after a delay
+        destroyBtn.disabled = true;
+        destroyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing...';
+
+        // Enable after a delay
+        setTimeout(() => {
+            destroyBtn.disabled = false;
+            destroyBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Destroy Desktop';
+
+            // Add click event listener
+            destroyBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (confirm('Are you sure you want to destroy this desktop? All unsaved data will be lost.')) {
+                    destroyDesktop();
+                }
+            });
+        }, 3000);
     }
 
-    // Renew button
+    // Renew button - initially disabled with a delay
     const renewBtn = document.getElementById('renew-desktop-btn');
     if (renewBtn) {
-        renewBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            renewDesktop();
-        });
+        // Initially disable the button and enable after a delay
+        renewBtn.disabled = true;
+        renewBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing...';
+
+        // Enable after a delay
+        setTimeout(() => {
+            renewBtn.disabled = false;
+            renewBtn.innerHTML = '<i class="fas fa-sync"></i> Renew Desktop';
+
+            // Add click event listener
+            renewBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                renewDesktop();
+            });
+        }, 3000);
     }
 
     // Check container status
@@ -54,41 +76,107 @@ function launchDesktop(templateId) {
     // Log the launch attempt
     debugLog(`Launching desktop with template ID: ${templateId}`);
 
-    // Show loading overlay with enhanced feedback
+    // Show loading overlay
+    showLoading('Launching desktop environment...');
+// Web Desktop Plugin JavaScript
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize elements only if they exist
+    const launchButtons = document.querySelectorAll('.launch-desktop-btn');
+    if (launchButtons.length > 0) {
+        launchButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                const templateId = this.getAttribute('data-template-id');
+                launchDesktop(templateId);
+            });
+        });
+    }
+
+    // Direct launch button
+    const directLaunchBtn = document.getElementById('direct-launch-btn');
+    if (directLaunchBtn) {
+        directLaunchBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const url = this.getAttribute('data-url');
+            if (url) {
+                window.open(url, '_blank');
+            }
+        });
+    }
+
+    // Destroy button - initially disabled with a delay
+    const destroyBtn = document.getElementById('destroy-desktop-btn');
+    if (destroyBtn) {
+        // Initially disable the button and enable after a delay
+        destroyBtn.disabled = true;
+        destroyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing...';
+
+        // Enable after a delay
+        setTimeout(() => {
+            destroyBtn.disabled = false;
+            destroyBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Destroy Desktop';
+
+            // Add click event listener
+            destroyBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (confirm('Are you sure you want to destroy this desktop? All unsaved data will be lost.')) {
+                    destroyDesktop();
+                }
+            });
+        }, 3000);
+    }
+
+    // Renew button - initially disabled with a delay
+    const renewBtn = document.getElementById('renew-desktop-btn');
+    if (renewBtn) {
+        // Initially disable the button and enable after a delay
+        renewBtn.disabled = true;
+        renewBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing...';
+
+        // Enable after a delay
+        setTimeout(() => {
+            renewBtn.disabled = false;
+            renewBtn.innerHTML = '<i class="fas fa-sync"></i> Renew Desktop';
+
+            // Add click event listener
+            renewBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                renewDesktop();
+            });
+        }, 3000);
+    }
+
+    // Check container status
+    checkContainerStatus();
+});
+
+// Launch a new desktop
+function launchDesktop(templateId) {
+    // Log the launch attempt
+    debugLog(`Launching desktop with template ID: ${templateId}`);
+
+    // Show loading overlay
     showLoading('Launching desktop environment...');
 
-    // Update status messages during loading
-    const messages = [
-        'Initializing...',
-        'Creating container...',
-        'Allocating resources...',
-        'Setting up environment...',
-        'Configuring network...',
-        'Starting desktop services...',
-        'Preparing user interface...'
-    ];
-
-    let messageIndex = 0;
-    const statusElement = document.getElementById('loading-status');
+    // Get elements for updating
     const progressBar = document.getElementById('loading-progress-bar');
+    const statusElement = document.getElementById('loading-status');
 
-    // Update status message every 3 seconds
-    const messageInterval = setInterval(() => {
-        if (statusElement) {
-            messageIndex = (messageIndex + 1) % messages.length;
-            statusElement.textContent = messages[messageIndex];
-            debugLog(`Status update: ${messages[messageIndex]}`);
-        }
-
+    // Update progress bar
+    const progressInterval = setInterval(() => {
         // Update progress bar if it exists
         if (progressBar) {
             const currentWidth = parseInt(progressBar.style.width) || 0;
-            if (currentWidth < 90) { // Cap at 90% until success
-                progressBar.style.width = (currentWidth + 10) + '%';
-                debugLog(`Progress update: ${progressBar.style.width}`);
+            if (currentWidth < 95) { // Cap at 95% until success
+                const newWidth = Math.min(95, currentWidth + 20);
+                progressBar.style.width = newWidth + '%';
+
+                // Force a reflow to ensure the animation runs
+                document.body.offsetHeight;
             }
         }
-    }, 3000);
+    }, 500); // Update every 500ms instead of 1000ms
 
     // Set up periodic status checks to detect when container is ready
     let statusCheckCount = 0;
@@ -116,12 +204,15 @@ function launchDesktop(templateId) {
 
                     // Clear intervals and timeouts
                     clearInterval(statusCheckInterval);
-                    clearInterval(messageInterval);
+                    clearInterval(progressInterval);
                     clearTimeout(loadingTimeout);
 
-                    // Update progress to 100%
+                    // Update progress to 100% with !important to override animations
                     if (progressBar) {
-                        progressBar.style.width = '100%';
+                        // Force the progress bar to 100% with !important
+                        progressBar.style.cssText += 'width: 100% !important; transition: width 0.5s !important;';
+                        // Also set the animation to none to prevent any animation from overriding this
+                        progressBar.style.animation = 'none';
                     }
 
                     // Update status message
@@ -129,10 +220,10 @@ function launchDesktop(templateId) {
                         statusElement.textContent = 'Desktop ready! Redirecting...';
                     }
 
-                    // Reload the page after a short delay
+                    // Reload the page after a delay (increased to 3 seconds)
                     setTimeout(() => {
                         window.location.reload();
-                    }, 1500);
+                    }, 3000);
                 }
 
                 // If we've reached the maximum number of checks, stop checking
@@ -153,9 +244,9 @@ function launchDesktop(templateId) {
             // If we're no longer loading, stop checking
             clearInterval(statusCheckInterval);
         }
-    }, 5000); // Check every 5 seconds
+    }, 8000); // Check every 8 seconds (increased from 5)
 
-    // Set a timeout to detect if we're stuck
+    // Set a timeout to detect if we're stuck (increased by 6 seconds total)
     const loadingTimeout = setTimeout(() => {
         // Check if we're still loading
         const loadingOverlay = document.getElementById('loading-overlay');
@@ -163,13 +254,32 @@ function launchDesktop(templateId) {
             debugLog('TIMEOUT: Desktop launch is taking longer than expected');
 
             // Clear the intervals
-            clearInterval(messageInterval);
+            clearInterval(progressInterval);
             clearInterval(statusCheckInterval);
 
-            // Show error message
-            if (statusElement) {
-                statusElement.textContent = 'Launch timed out. The server might be busy.';
-                statusElement.style.color = '#ff6b6b';
+            // Show red progress bar for error
+            const simpleProgressBar = document.getElementById('simple-progress-bar');
+            const progressText = document.getElementById('progress-percentage');
+
+            if (simpleProgressBar && progressText) {
+                // Clear any existing interval
+                clearInterval(progressInterval);
+
+                // Animate to 100% with error color
+                let errorProgress = currentProgress;
+                const errorInterval = setInterval(() => {
+                    if (errorProgress < 100) {
+                        errorProgress += 2;
+                        simpleProgressBar.style.width = errorProgress + '%';
+                        progressText.textContent = errorProgress + '%';
+                    } else {
+                        clearInterval(errorInterval);
+
+                        // Add error effect
+                        simpleProgressBar.style.backgroundColor = '#dc3545'; // Red
+                        progressText.style.fontWeight = 'bold';
+                    }
+                }, 50);
             }
 
             // Add retry button
@@ -227,17 +337,21 @@ function launchDesktop(templateId) {
                 buttonContainer.appendChild(checkStatusButton);
             }
         }
-    }, 45000); // 45 second timeout
+    }, 51000); // 51 second timeout (increased by 3 more seconds)
 
     debugLog('Sending API request to create container...');
-    fetch('/api/v1/plugins/webdesktop/container', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': getCSRFToken()
-        },
-        body: JSON.stringify({ template_id: templateId })
-    })
+
+    // Add a 3-second delay before sending the request to ensure backend has time to initialize
+    setTimeout(() => {
+        debugLog('Sending delayed container creation request after 3 seconds...');
+        fetch('/api/v1/plugins/webdesktop/container', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': getCSRFToken()
+            },
+            body: JSON.stringify({ template_id: templateId })
+        })
     .then(response => {
         debugLog(`API response status: ${response.status}`);
         return response.json().catch(error => {
@@ -247,7 +361,7 @@ function launchDesktop(templateId) {
     })
     .then(data => {
         // Clear the intervals and timeouts
-        clearInterval(messageInterval);
+        clearInterval(progressInterval);
         clearInterval(statusCheckInterval);
         clearTimeout(loadingTimeout);
 
@@ -255,10 +369,236 @@ function launchDesktop(templateId) {
         if (data.success) {
             debugLog('Container creation request successful, waiting for container to start');
 
-            // Update progress to 80%
-            if (progressBar) {
-                progressBar.style.width = '80%';
+            // Update progress to 80
+    // Get elements for updating
+    const progressBar = document.getElementById('loading-progress-bar');
+    const statusElement = document.getElementById('loading-status');
+
+    // Update progress bar
+    const progressInterval = setInterval(() => {
+        // Update progress bar if it exists
+        if (progressBar) {
+            const currentWidth = parseInt(progressBar.style.width) || 0;
+            if (currentWidth < 95) { // Cap at 95% until success
+                const newWidth = Math.min(95, currentWidth + 15);
+                progressBar.style.width = newWidth + '%';
             }
+        }
+    }, 1000);
+
+    // Set up periodic status checks to detect when container is ready
+    let statusCheckCount = 0;
+    const maxStatusChecks = 30; // Maximum number of status checks
+
+    const statusCheckInterval = setInterval(() => {
+        // Only check if we're still loading
+        if (window.isLoadingDesktop) {
+            statusCheckCount++;
+            debugLog(`Periodic status check #${statusCheckCount}`);
+
+            fetch('/api/v1/plugins/webdesktop/container/status', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                debugLog(`Status check response: ${JSON.stringify(data)}`);
+
+                // If we have a container and it's running, redirect
+                if (data && data.container && data.container.status === 'running') {
+                    debugLog('Container is ready! Redirecting...');
+
+                    // Clear intervals and timeouts
+                    clearInterval(statusCheckInterval);
+                    clearInterval(progressInterval);
+                    clearTimeout(loadingTimeout);
+
+                    // Set progress to 100%
+                    targetProgress = 100;
+
+                    // Clear the interval and set progress directly
+                    clearInterval(progressInterval);
+
+                    // Get the new progress bar
+                    const simpleProgressBar = document.getElementById('simple-progress-bar');
+                    const progressText = document.getElementById('progress-percentage');
+
+                    if (simpleProgressBar && progressText) {
+                        // Animate to 100% smoothly
+                        let completeProgress = currentProgress;
+                        const completeInterval = setInterval(() => {
+                            if (completeProgress < 100) {
+                                completeProgress += 2;
+                                simpleProgressBar.style.width = completeProgress + '%';
+                                progressText.textContent = completeProgress + '%';
+                            } else {
+                                clearInterval(completeInterval);
+
+                                // Add success effect
+                                simpleProgressBar.style.backgroundColor = '#28a745';
+                                progressText.style.fontWeight = 'bold';
+                            }
+                        }, 50);
+                    }
+
+                    // Update status message
+                    if (statusElement) {
+                        statusElement.textContent = 'Desktop ready! Redirecting...';
+                    }
+
+                    // Reload the page after a delay
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 3000);
+                }
+
+                // If we've reached the maximum number of checks, stop checking
+                if (statusCheckCount >= maxStatusChecks) {
+                    debugLog('Maximum status checks reached, stopping periodic checks');
+                    clearInterval(statusCheckInterval);
+                }
+            })
+            .catch(error => {
+                debugLog(`Error in status check: ${error}`);
+
+                // If we've reached the maximum number of checks, stop checking
+                if (statusCheckCount >= maxStatusChecks) {
+                    clearInterval(statusCheckInterval);
+                }
+            });
+        } else {
+            // If we're no longer loading, stop checking
+            clearInterval(statusCheckInterval);
+        }
+    }, 8000); // Check every 8 seconds (increased from 5)
+
+    // Set a timeout to detect if we're stuck (increased by 6 seconds total)
+    const loadingTimeout = setTimeout(() => {
+        // Check if we're still loading
+        const loadingOverlay = document.getElementById('loading-overlay');
+        if (loadingOverlay && loadingOverlay.style.display !== 'none') {
+            debugLog('TIMEOUT: Desktop launch is taking longer than expected');
+
+            // Clear the intervals
+            clearInterval(progressInterval);
+            clearInterval(statusCheckInterval);
+
+            // Show red progress bar for error
+            const simpleProgressBar = document.getElementById('simple-progress-bar');
+            const progressText = document.getElementById('progress-percentage');
+
+            if (simpleProgressBar && progressText) {
+                // Clear any existing interval
+                clearInterval(progressInterval);
+
+                // Animate to 100% with error color
+                let errorProgress = currentProgress;
+                const errorInterval = setInterval(() => {
+                    if (errorProgress < 100) {
+                        errorProgress += 2;
+                        simpleProgressBar.style.width = errorProgress + '%';
+                        progressText.textContent = errorProgress + '%';
+                    } else {
+                        clearInterval(errorInterval);
+
+                        // Add error effect
+                        simpleProgressBar.style.backgroundColor = '#dc3545'; // Red
+                        progressText.style.fontWeight = 'bold';
+                    }
+                }, 50);
+            }
+
+            // Add retry button
+            const retryButton = document.createElement('button');
+            retryButton.className = 'btn btn-primary mt-3';
+            retryButton.innerHTML = '<i class="fas fa-sync"></i> Retry';
+            retryButton.onclick = function() {
+                debugLog('Retry button clicked');
+                // Hide the loading overlay
+                hideLoading();
+                // Try again
+                setTimeout(() => launchDesktop(templateId), 500);
+            };
+
+            // Add reload button
+            const reloadButton = document.createElement('button');
+            reloadButton.className = 'btn btn-secondary mt-3 ml-2';
+            reloadButton.innerHTML = '<i class="fas fa-redo"></i> Reload Page';
+            reloadButton.onclick = function() {
+                debugLog('Reload button clicked');
+                window.location.reload();
+            };
+
+            // Add buttons to the loading overlay
+            if (loadingOverlay) {
+                const buttonContainer = document.createElement('div');
+                buttonContainer.className = 'mt-4';
+                buttonContainer.appendChild(retryButton);
+                buttonContainer.appendChild(reloadButton);
+                loadingOverlay.appendChild(buttonContainer);
+            }
+
+            // Add a check container status button for admins
+            const debugLogElement = document.getElementById('debug-log');
+            if (debugLogElement) {
+                const checkStatusButton = document.createElement('button');
+                checkStatusButton.className = 'btn btn-info mt-3 ml-2';
+                checkStatusButton.innerHTML = '<i class="fas fa-search"></i> Check Status';
+                checkStatusButton.onclick = function() {
+                    debugLog('Checking container status...');
+                    fetch('/api/v1/plugins/webdesktop/container/status', {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        debugLog(`Container status response: ${JSON.stringify(data)}`);
+                    })
+                    .catch(error => {
+                        debugLog(`Error checking status: ${error}`);
+                    });
+                };
+                buttonContainer.appendChild(checkStatusButton);
+            }
+        }
+    }, 51000); // 51 second timeout (increased by 3 more seconds)
+
+    debugLog('Sending API request to create container...');
+
+    // Add a 3-second delay before sending the request to ensure backend has time to initialize
+    setTimeout(() => {
+        debugLog('Sending delayed container creation request after 3 seconds...');
+        fetch('/api/v1/plugins/webdesktop/container', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': getCSRFToken()
+            },
+            body: JSON.stringify({ template_id: templateId })
+        })
+    .then(response => {
+        debugLog(`API response status: ${response.status}`);
+        return response.json().catch(error => {
+            debugLog(`Error parsing JSON: ${error}`);
+            return { success: false, message: 'Invalid server response' };
+        });
+    })
+    .then(data => {
+        // Clear the intervals and timeouts
+        clearInterval(progressInterval);
+        clearInterval(statusCheckInterval);
+        clearTimeout(loadingTimeout);
+
+        debugLog(`API response data: ${JSON.stringify(data)}`);
+        if (data.success) {
+            debugLog('Container creation request successful, waiting for container to start');
+
+            // Update progress target
+            targetProgress = 80;
 
             // Update status message
             if (statusElement) {
@@ -267,7 +607,7 @@ function launchDesktop(templateId) {
 
             // Start a new status check to wait for the container to be ready
             let readyCheckCount = 0;
-            const maxReadyChecks = 12; // Check for up to 1 minute (5s * 12)
+            const maxReadyChecks = 15; // Check for up to 1 minute 15 seconds (5s * 15)
 
             const readyCheckInterval = setInterval(() => {
                 readyCheckCount++;
@@ -290,9 +630,32 @@ function launchDesktop(templateId) {
                         // Clear interval
                         clearInterval(readyCheckInterval);
 
-                        // Update progress to 100%
-                        if (progressBar) {
-                            progressBar.style.width = '100%';
+                        // Set progress to 100%
+                        targetProgress = 100;
+
+                        // Clear the interval and set progress directly
+                        clearInterval(progressInterval);
+
+                        // Get the new progress bar
+                        const simpleProgressBar = document.getElementById('simple-progress-bar');
+                        const progressText = document.getElementById('progress-percentage');
+
+                        if (simpleProgressBar && progressText) {
+                            // Animate to 100% smoothly
+                            let completeProgress = currentProgress;
+                            const completeInterval = setInterval(() => {
+                                if (completeProgress < 100) {
+                                    completeProgress += 2;
+                                    simpleProgressBar.style.width = completeProgress + '%';
+                                    progressText.textContent = completeProgress + '%';
+                                } else {
+                                    clearInterval(completeInterval);
+
+                                    // Add success effect
+                                    simpleProgressBar.style.backgroundColor = '#28a745';
+                                    progressText.style.fontWeight = 'bold';
+                                }
+                            }, 50);
                         }
 
                         // Update status message
@@ -300,10 +663,10 @@ function launchDesktop(templateId) {
                             statusElement.textContent = 'Desktop ready! Redirecting...';
                         }
 
-                        // Reload the page after a short delay
+                        // Reload the page after a delay
                         setTimeout(() => {
                             window.location.reload();
-                        }, 1500);
+                        }, 3000);
                     } else if (readyCheckCount >= maxReadyChecks) {
                         // If we've reached the maximum number of checks, just reload
                         debugLog('Maximum ready checks reached, reloading page');
@@ -320,7 +683,7 @@ function launchDesktop(templateId) {
                         window.location.reload();
                     }
                 });
-            }, 5000); // Check every 5 seconds
+            }, 8000); // Check every 8 seconds (increased from 5)
         } else {
             debugLog(`Container creation failed: ${data.message}`);
             hideLoading();
@@ -329,7 +692,7 @@ function launchDesktop(templateId) {
     })
     .catch(error => {
         // Clear the intervals and timeouts
-        clearInterval(messageInterval);
+        clearInterval(progressInterval);
         clearInterval(statusCheckInterval);
         clearTimeout(loadingTimeout);
 
@@ -337,11 +700,12 @@ function launchDesktop(templateId) {
         hideLoading();
         showAlert('danger', 'Error launching desktop. Please try again later.');
     });
+    }, 3000); // Close the setTimeout with a 3-second delay
 }
 
 // Destroy the current desktop
 function destroyDesktop() {
-    showLoading('Destroying desktop environment...');
+    showLoading();
 
     fetch('/api/v1/plugins/webdesktop/container', {
         method: 'DELETE',
@@ -370,7 +734,7 @@ function destroyDesktop() {
 
 // Renew the current desktop time
 function renewDesktop() {
-    showLoading('Renewing desktop time...');
+    showLoading();
 
     fetch('/api/v1/plugins/webdesktop/container/renew', {
         method: 'PATCH',
@@ -436,18 +800,23 @@ function checkContainerStatus() {
                     statusBadge.classList.add('status-running');
                     debugLog('Container is running, updating UI');
 
-                    // Enable iframe if it exists
+                    // Enable iframe if it exists - with a delay to ensure container is fully ready
                     const desktopIframe = document.getElementById('desktop-iframe');
                     if (desktopIframe) {
-                        debugLog(`Setting iframe src to: ${data.container.access_url}`);
-                        desktopIframe.src = data.container.access_url;
+                        debugLog(`Will set iframe src to: ${data.container.access_url} after 3 second delay`);
+
+                        // Add a delay before setting the iframe src
+                        setTimeout(() => {
+                            debugLog(`Now setting iframe src to: ${data.container.access_url}`);
+                            desktopIframe.src = data.container.access_url;
+                        }, 3000);
                     }
                 } else if (data.container.status === 'starting') {
                     statusBadge.classList.add('status-starting');
-                    debugLog('Container is starting, will check again in 5 seconds');
+                    debugLog('Container is starting, will check again in 10 seconds');
 
-                    // Check again in 5 seconds
-                    setTimeout(checkContainerStatus, 5000);
+                    // Check again in 10 seconds (increased from 5)
+                    setTimeout(checkContainerStatus, 10000);
                 } else {
                     statusBadge.classList.add('status-stopped');
                     debugLog(`Container is in state: ${data.container.status}`);
@@ -489,11 +858,21 @@ function checkContainerStatus() {
                 debugLog('Showing container info section');
             }
 
-            // Update direct launch URL
+            // Update direct launch URL - with a delay to ensure it's ready
             const directLaunchBtn = document.getElementById('direct-launch-btn');
             if (directLaunchBtn && data.container.access_url) {
                 debugLog(`Setting direct launch URL to: ${data.container.access_url}`);
                 directLaunchBtn.setAttribute('data-url', data.container.access_url);
+
+                // Disable the button initially and enable after a delay
+                directLaunchBtn.disabled = true;
+                directLaunchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing...';
+
+                setTimeout(() => {
+                    debugLog('Enabling direct launch button after delay');
+                    directLaunchBtn.disabled = false;
+                    directLaunchBtn.innerHTML = '<i class="fas fa-external-link-alt"></i> Open in New Tab';
+                }, 3000);
             }
 
             // If we were previously showing a loading screen, hide it
@@ -587,97 +966,59 @@ function debugLog(message) {
     }
 }
 
+// Global variables for progress tracking
+let progressInterval = null;
+let currentProgress = 0;
+let targetProgress = 0;
+
 function showLoading(message) {
     let loadingOverlay = document.getElementById('loading-overlay');
 
     if (!loadingOverlay) {
-        loadingOverlay = document.createElement('div');
-        loadingOverlay.id = 'loading-overlay';
-        loadingOverlay.className = 'loading-overlay';
-        loadingOverlay.style.position = 'fixed';
-        loadingOverlay.style.top = '0';
-        loadingOverlay.style.left = '0';
-        loadingOverlay.style.width = '100%';
-        loadingOverlay.style.height = '100%';
-        loadingOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
-        loadingOverlay.style.zIndex = '9999';
-        loadingOverlay.style.display = 'flex';
-        loadingOverlay.style.justifyContent = 'center';
-        loadingOverlay.style.alignItems = 'center';
-        loadingOverlay.style.flexDirection = 'column';
-
-        // Create spinner
-        const spinner = document.createElement('div');
-        spinner.className = 'wd-challenge-spinner';
-        spinner.style.display = 'inline-block';
-        spinner.style.width = '100px';
-        spinner.style.height = '100px';
-        spinner.style.border = '6px solid rgba(255, 255, 255, 0.2)';
-        spinner.style.borderRadius = '50%';
-        spinner.style.borderTopColor = '#007bff';
-        spinner.style.animation = 'challenge-spin 1s ease-in-out infinite';
-        spinner.style.marginBottom = '25px';
-
-        // Create main text
-        const loadingText = document.createElement('div');
-        loadingText.id = 'loading-text';
-        loadingText.className = 'wd-challenge-text';
-        loadingText.style.color = '#fff';
-        loadingText.style.fontSize = '24px';
-        loadingText.style.marginBottom = '25px';
-        loadingText.style.fontWeight = '600';
-
-        // Create status text
-        const statusText = document.createElement('div');
-        statusText.id = 'loading-status';
-        statusText.className = 'wd-challenge-status';
-        statusText.style.color = '#6fc2ff';
-        statusText.style.fontSize = '18px';
-        statusText.style.marginBottom = '25px';
-        statusText.textContent = 'Initializing...';
-
-        // Create progress container
-        const progressContainer = document.createElement('div');
-        progressContainer.className = 'wd-progress-container mt-3';
-        progressContainer.style.width = '350px';
-        progressContainer.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
-        progressContainer.style.borderRadius = '10px';
-        progressContainer.style.overflow = 'hidden';
-        progressContainer.style.margin = '0 auto';
-
-        // Create progress bar
-        const progressBar = document.createElement('div');
-        progressBar.id = 'loading-progress-bar';
-        progressBar.className = 'wd-progress-bar';
-        progressBar.style.height = '10px';
-        progressBar.style.width = '0%';
-        progressBar.style.backgroundColor = '#007bff';
-        progressBar.style.borderRadius = '10px';
-        progressBar.style.backgroundImage = 'linear-gradient(45deg, rgba(255, 255, 255, 0.2) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0.2) 75%, transparent 75%, transparent)';
-        progressBar.style.backgroundSize = '30px 30px';
-        progressBar.style.animation = 'wd-progress-stripes 2s linear infinite';
-
-        // Add elements to the overlay
-        progressContainer.appendChild(progressBar);
-        loadingOverlay.appendChild(spinner);
-        loadingOverlay.appendChild(loadingText);
-        loadingOverlay.appendChild(statusText);
-        loadingOverlay.appendChild(progressContainer);
-
-        // Add to document
-        document.body.appendChild(loadingOverlay);
-    }
-
-    // Set the loading message
-    const loadingTextElement = document.getElementById('loading-text');
-    if (loadingTextElement) {
-        loadingTextElement.textContent = message || 'Loading...';
+        // If the loading overlay doesn't exist, use the one in desktop.html
+        console.error('Loading overlay not found - it should be defined in desktop.html');
+        return;
     }
 
     // Reset progress bar
-    const progressBar = document.getElementById('loading-progress-bar');
-    if (progressBar) {
-        progressBar.style.width = '10%'; // Start at 10%
+    const progressBar = document.getElementById('simple-progress-bar');
+    const progressText = document.getElementById('progress-percentage');
+
+    if (progressBar && progressText) {
+        // Reset progress
+        currentProgress = 0;
+        targetProgress = 20; // Initial target
+
+        // Reset styles
+        progressBar.style.width = '0%';
+        progressBar.style.backgroundColor = '#28a745'; // Green
+        progressText.textContent = '0%';
+
+        // Clear any existing interval
+        if (progressInterval) {
+            clearInterval(progressInterval);
+        }
+
+        // Start progress animation
+        progressInterval = setInterval(() => {
+            // If we haven't reached target yet, increment
+            if (currentProgress < targetProgress) {
+                currentProgress += 1;
+                progressBar.style.width = currentProgress + '%';
+                progressText.textContent = currentProgress + '%';
+            }
+        }, 100); // Update every 100ms for smooth animation
+
+        // After a delay, set initial progress
+        setTimeout(() => {
+            targetProgress = 30;
+        }, 1000);
+    }
+
+    // Update message if provided
+    const loadingText = document.getElementById('loading-text');
+    if (loadingText && message) {
+        loadingText.textContent = message;
     }
 
     // Show the overlay
@@ -685,12 +1026,15 @@ function showLoading(message) {
 
     // Set a flag to indicate we're loading a desktop
     window.isLoadingDesktop = true;
-
-    // Log for debugging
-    console.log('Loading overlay displayed with message:', message);
 }
 
 function hideLoading() {
+    // Clear any progress interval
+    if (progressInterval) {
+        clearInterval(progressInterval);
+        progressInterval = null;
+    }
+
     // Clear the loading desktop flag
     window.isLoadingDesktop = false;
 
@@ -707,9 +1051,13 @@ function hideLoading() {
             loadingOverlay.style.transition = '';
 
             // Reset progress bar
-            const progressBar = document.getElementById('loading-progress-bar');
-            if (progressBar) {
+            const progressBar = document.getElementById('simple-progress-bar');
+            const progressText = document.getElementById('progress-percentage');
+
+            if (progressBar && progressText) {
                 progressBar.style.width = '0%';
+                progressBar.style.backgroundColor = '#28a745';
+                progressText.textContent = '0%';
             }
 
             // Reset status text

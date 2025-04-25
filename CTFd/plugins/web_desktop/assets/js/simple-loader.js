@@ -51,13 +51,26 @@
                 spinner.style.borderRadius = '50%';
                 spinner.style.marginBottom = '20px';
 
-                // Add animation
+                // Add animations
                 spinner.style.animation = 'spin 1s linear infinite';
                 const style = document.createElement('style');
                 style.textContent = `
                     @keyframes spin {
                         0% { transform: rotate(0deg); }
                         100% { transform: rotate(360deg); }
+                    }
+                    @keyframes wd-progress-stripes {
+                        0% { background-position: 0 0; }
+                        100% { background-position: 30px 0; }
+                    }
+                    @keyframes wd-progress {
+                        0% { width: 20%; }
+                        15% { width: 40%; }
+                        30% { width: 60%; }
+                        45% { width: 75%; }
+                        60% { width: 85%; }
+                        75% { width: 95%; }
+                        100% { width: 100%; }
                     }
                 `;
                 document.head.appendChild(style);
@@ -83,22 +96,26 @@
                 statusText.innerHTML = 'Initializing...';
                 overlay.appendChild(statusText);
 
-                // Add progress bar
+                // Add progress bar with improved visibility
                 const progressContainer = document.createElement('div');
-                progressContainer.style.width = '300px';
-                progressContainer.style.height = '10px';
+                progressContainer.style.width = '350px';
+                progressContainer.style.height = '20px'; // Increased height
                 progressContainer.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
-                progressContainer.style.borderRadius = '5px';
+                progressContainer.style.borderRadius = '10px';
                 progressContainer.style.overflow = 'hidden';
                 progressContainer.style.marginBottom = '20px';
 
                 const progressBar = document.createElement('div');
                 progressBar.id = 'loading-progress';
-                progressBar.style.width = '0%';
+                progressBar.style.width = '20%';
                 progressBar.style.height = '100%';
                 progressBar.style.backgroundColor = '#007bff';
-                progressBar.style.borderRadius = '5px';
+                progressBar.style.borderRadius = '10px';
                 progressBar.style.transition = 'width 0.5s';
+                // Add animated stripes
+                progressBar.style.backgroundImage = 'linear-gradient(45deg, rgba(255, 255, 255, 0.2) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0.2) 75%, transparent 75%, transparent)';
+                progressBar.style.backgroundSize = '30px 30px';
+                progressBar.style.animation = 'wd-progress 30s ease-in-out forwards, wd-progress-stripes 2s linear infinite';
 
                 progressContainer.appendChild(progressBar);
                 overlay.appendChild(progressContainer);
@@ -156,13 +173,17 @@
                 // Update status and progress
                 let messageIndex = 0;
                 const statusInterval = setInterval(() => {
+                    // Update status message
                     messageIndex = (messageIndex + 1) % messages.length;
                     statusText.innerHTML = messages[messageIndex];
 
                     // Update progress bar
                     const currentWidth = parseInt(progressBar.style.width) || 0;
-                    if (currentWidth < 90) { // Cap at 90% until we know it's successful
-                        progressBar.style.width = (currentWidth + 10) + '%';
+                    if (currentWidth < 95) { // Cap at 95% until we know it's successful
+                        // Calculate a new width that ensures the bar will fill up over time
+                        // Use a larger increment to make sure the bar fills up
+                        const newWidth = Math.min(95, currentWidth + 15);
+                        progressBar.style.width = newWidth + '%';
                     }
                 }, 3000);
 
@@ -223,6 +244,9 @@
                     // Update status text
                     statusText.innerHTML = 'Error';
                     statusText.style.color = '#ff6b6b';
+
+                    // Make progress bar red with !important to override animations
+                    progressBar.style.cssText += 'background-color: #ff6b6b !important; width: 100% !important; transition: width 0.5s !important;';
 
                     // Show error message
                     errorMessage.innerHTML = message;

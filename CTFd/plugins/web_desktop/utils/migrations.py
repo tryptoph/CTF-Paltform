@@ -28,7 +28,7 @@ def upgrade():
             name="Kali Linux Desktop",
             description="Kali Linux desktop environment with common penetration testing tools",
             docker_image="kasmweb/kali-rolling-desktop:1.14.0",
-            memory_limit="2048m",
+            memory_limit="512m",
             cpu_limit=2.0,
             desktop_port=6901,
             is_enabled=True,
