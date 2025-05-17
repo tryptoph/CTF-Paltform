@@ -11,7 +11,7 @@ This platform contains various intentionally vulnerable web applications that co
 
 1. Clone this repository:
    ```
-   git clone https://github.com/tryptoph/ctf-platform.git
+   git clone https://github.com/tryptoph/CTF-Paltform.git
    cd ctf-platform
    ```
 
