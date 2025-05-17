@@ -12,7 +12,7 @@ This platform contains various intentionally vulnerable web applications that co
 1. Clone this repository:
    ```
    git clone https://github.com/tryptoph/CTF-Paltform.git
-   cd ctf-platform
+   cd CTF-Paltform
    ```
 
 2. Initialize Docker Swarm:
